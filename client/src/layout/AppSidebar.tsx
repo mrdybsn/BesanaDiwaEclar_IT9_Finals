@@ -6,11 +6,11 @@ const AppSidebar = () => {
 
     const sidebarItems = [
         {
-            path: "#",
+            path: "/admin/dashboard",
             text: "Dashboard",
         },
         {
-            path: "#",
+            path: "/admin/analytics",
             text: "Analytics",
         },
         {
@@ -18,27 +18,31 @@ const AppSidebar = () => {
             text: "POS",
         },
         {
-            path: "#",
+            path: "/admin/users",
             text: "Users",
         },
         {
-            path: "#",
+            path: "/admin/customers",
             text: "Customers",
         },
         {
-            path: "#",
+            path: "/admin/products",
             text: "Products",
         },
         {
-            path: "#",
+            path: "/admin/inventory",
             text: "Inventory",
         },
         {
-            path: "#",
+            path: "/admin/gallon-debts",
+            text: "Gallon Debts",
+        },
+        {
+            path: "/admin/deliveries",
             text: "Deliveries",
         },
         {
-            path: "#",
+            path: "/admin/remittances",
             text: "Remittances",
         },
     ];
