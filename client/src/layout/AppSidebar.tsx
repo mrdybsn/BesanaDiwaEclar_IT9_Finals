@@ -14,8 +14,16 @@ const AppSidebar = () => {
             text: "Analytics",
         },
         {
-            path: "#",
+            path: "/admin/POS",
             text: "POS",
+        },
+        {
+            path: "/admin/orders",
+            text: "Orders",
+        },
+        {
+            path: "/admin/recurring",
+            text: "Recurring Orders",
         },
         {
             path: "/admin/users",

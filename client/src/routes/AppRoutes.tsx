@@ -21,6 +21,19 @@ import RiderMapMainPage from "../pages/Rider/RiderMapMainPage";
 import RiderCollectionMainPage from "../pages/Rider/RiderCollectionMainPage";
 import RiderLostItemMainPage from "../pages/Rider/RiderLostItemMainPage";
 import RiderWeeklyScheduleMainPage from "../pages/Rider/RiderWeeklyScheduleMainPage";
+import ShopMainPage from "../pages/Customer/ShopMainPage";
+import OrderFormMainPage from "../pages/Customer/OrderFormMainPage";
+import OrderHistoryMainPage from "../pages/Customer/OrderHistoryMainPage";
+import ProfileMainPage from "../pages/Customer/ProfileMainPage";
+import JugStatusMainPage from "../pages/Customer/JugStatusMainPage";
+import OrderTrackingMainPage from "../pages/Customer/OrderTrackingMainPage";
+import AdminNotificationsMainPage from "../pages/Admin/AdminNotificationsMainPage";
+import CashierNotificationsMainPage from "../pages/Cashier/CashierNotificationsMainPage";
+import RiderNotificationsMainPage from "../pages/Rider/RiderNotificationsMainPage";
+import CustomerNotificationsMainPage from "../pages/Customer/CustomerNotificationsMainPage";
+import AdminPOSPage from "../pages/Admin/AdminPOSPage";
+import AdminOrdersMainPage from "../pages/Admin/AdminOrdersMainPage";
+import AdminRecurringMainPage from "../pages/Admin/AdminRecurringMainPage";
 
 
 const AppRoutes = () => {
@@ -30,6 +43,9 @@ const AppRoutes = () => {
             <Route element={<AppLayout />}>
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                <Route path="/admin/pos" element={<AdminPOSPage />} />
+                <Route path="/admin/orders" element={<AdminOrdersMainPage />} />
+                <Route path="/admin/recurring" element={<AdminRecurringMainPage />} />
                 <Route path="/admin/users" element={<UserMainPage />} />
                 <Route path="/admin/products" element={<ProductMainPage />} />
                 <Route path="/admin/customers" element={<CustomerMainPage />} />
@@ -37,6 +53,8 @@ const AppRoutes = () => {
                 <Route path="/admin/gallon-debts" element={<GallonDebtsMainPage />} />
                 <Route path="/admin/deliveries" element={<DeliveryMainPage />} />
                 <Route path="/admin/remittances" element={<RemittancesMainPage />} />
+                <Route path="/admin/notifications"  element={<AdminNotificationsMainPage />} />
+
 
                 <Route path="/cashier/pos" element={<POSMainPage />} />
                 <Route path="/cashier/customers" element={<CashierCustomersMainPage />} />
@@ -45,13 +63,23 @@ const AppRoutes = () => {
                 <Route path="/cashier/deliveries" element={<CashierDeliveriesMainPage />} />
                 <Route path="/cashier/remittances" element={<CashierRemittancesMainPage />} />
                 <Route path="/cashier/inventory" element={<CashierInventoryPage />} />
+                <Route path="/cashier/notifications"  element={<CashierNotificationsMainPage />} />
+
 
                 <Route path="/rider/tasks" element={<RiderTasksMainPage />} />
                 <Route path="/rider/map" element={<RiderMapMainPage />} />
                 <Route path="/rider/collection" element={<RiderCollectionMainPage />} />
                 <Route path="/rider/lost-items" element={<RiderLostItemMainPage />} />
                 <Route path="/rider/schedule" element={<RiderWeeklyScheduleMainPage />} />
+                <Route path="/rider/notifications"  element={<RiderNotificationsMainPage />} />
 
+                <Route path="/shop" element={<ShopMainPage />} />
+                <Route path="/shop/order-form" element={<OrderFormMainPage />} />
+                <Route path="/shop/history" element={<OrderHistoryMainPage />} />
+                <Route path="/shop/track/:id" element={<OrderTrackingMainPage />} />
+                <Route path="/shop/jug-status"  element={<JugStatusMainPage />} />
+                <Route path="/profile"          element={<ProfileMainPage />} />
+                <Route path="/notifications"        element={<CustomerNotificationsMainPage />} />
             </Route>
         </Routes>
     </>
