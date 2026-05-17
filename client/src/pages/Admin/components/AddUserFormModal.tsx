@@ -21,7 +21,7 @@ const AddUserFormModal: FC<AddUserFormModalProps> = ({ isOpen, onClose }) => {
     const roles = [
         { role_id: '', role: 'Select Role' },
         { role_id: 'admin', role: 'Admin' },
-        { role_id: 'staff', role: 'Staff' },
+        { role_id: 'cashier', role: 'Cashier' },
         { role_id: 'rider', role: 'Rider' },
     ]
 

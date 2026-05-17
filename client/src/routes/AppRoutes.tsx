@@ -9,7 +9,13 @@ import AdminAnalytics from "../pages/Admin/AdminAnalytics";
 import GallonDebtsMainPage from "../pages/Admin/GallonDebtsMainPage";
 import DeliveryMainPage from "../pages/Admin/DeliveryMainPage";
 import RemittancesMainPage from "../pages/Admin/RemittancesMainPage";
-import POSMainPage from "../pages/Staff/PosMainPage";
+import POSMainPage from "../pages/Cashier/POSMainPage";
+import CashierCustomersMainPage from "../pages/Cashier/CashierCustomersMainPage";
+import CashiersOrdersMainPage from "../pages/Cashier/CashiersOrdersMainPage";
+import RecurringOrdersMainPage from "../pages/Cashier/RecurringOrdersMainPager";
+import CashierDeliveriesMainPage from "../pages/Cashier/CashierDeliveriesMainPage";
+import CashierRemittancesMainPage from "../pages/Cashier/CashierRemittancesMainPage";
+import CashierInventoryPage from "../pages/Cashier/CashierInventoryPage";
 
 
 const AppRoutes = () => {
@@ -27,6 +33,13 @@ const AppRoutes = () => {
                 <Route path="/admin/deliveries" element={<DeliveryMainPage />} />
                 <Route path="/admin/remittances" element={<RemittancesMainPage />} />
 
+                <Route path="/cashier/pos" element={<POSMainPage />} />
+                <Route path="/cashier/customers" element={<CashierCustomersMainPage />} />
+                <Route path="/cashier/orders" element={<CashiersOrdersMainPage />} />
+                <Route path="/cashier/recurring" element={<RecurringOrdersMainPage />} />
+                <Route path="/cashier/deliveries" element={<CashierDeliveriesMainPage />} />
+                <Route path="/cashier/remittances" element={<CashierRemittancesMainPage />} />
+                <Route path="/cashier/inventory" element={<CashierInventoryPage />} />
 
             </Route>
         </Routes>
