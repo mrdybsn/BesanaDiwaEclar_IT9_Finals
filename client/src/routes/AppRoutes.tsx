@@ -12,10 +12,15 @@ import RemittancesMainPage from "../pages/Admin/RemittancesMainPage";
 import POSMainPage from "../pages/Cashier/POSMainPage";
 import CashierCustomersMainPage from "../pages/Cashier/CashierCustomersMainPage";
 import CashiersOrdersMainPage from "../pages/Cashier/CashiersOrdersMainPage";
-import RecurringOrdersMainPage from "../pages/Cashier/RecurringOrdersMainPager";
+import RecurringOrdersMainPage from "../pages/Cashier/RecurringOrdersMainPage";
 import CashierDeliveriesMainPage from "../pages/Cashier/CashierDeliveriesMainPage";
 import CashierRemittancesMainPage from "../pages/Cashier/CashierRemittancesMainPage";
 import CashierInventoryPage from "../pages/Cashier/CashierInventoryPage";
+import RiderTasksMainPage from "../pages/Rider/RiderTasksMainPage";
+import RiderMapMainPage from "../pages/Rider/RiderMapMainPage";
+import RiderCollectionMainPage from "../pages/Rider/RiderCollectionMainPage";
+import RiderLostItemMainPage from "../pages/Rider/RiderLostItemMainPage";
+import RiderWeeklyScheduleMainPage from "../pages/Rider/RiderWeeklyScheduleMainPage";
 
 
 const AppRoutes = () => {
@@ -40,6 +45,12 @@ const AppRoutes = () => {
                 <Route path="/cashier/deliveries" element={<CashierDeliveriesMainPage />} />
                 <Route path="/cashier/remittances" element={<CashierRemittancesMainPage />} />
                 <Route path="/cashier/inventory" element={<CashierInventoryPage />} />
+
+                <Route path="/rider/tasks" element={<RiderTasksMainPage />} />
+                <Route path="/rider/map" element={<RiderMapMainPage />} />
+                <Route path="/rider/collection" element={<RiderCollectionMainPage />} />
+                <Route path="/rider/lost-items" element={<RiderLostItemMainPage />} />
+                <Route path="/rider/schedule" element={<RiderWeeklyScheduleMainPage />} />
 
             </Route>
         </Routes>
