@@ -1,3 +1,4 @@
+import type { Order } from "../OrderHistoryMainPage";
 
 const STEPS: {
     status: Order["status"];

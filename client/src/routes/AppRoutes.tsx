@@ -34,6 +34,7 @@ import CustomerNotificationsMainPage from "../pages/Customer/CustomerNotificatio
 import AdminPOSPage from "../pages/Admin/AdminPOSPage";
 import AdminOrdersMainPage from "../pages/Admin/AdminOrdersMainPage";
 import AdminRecurringMainPage from "../pages/Admin/AdminRecurringMainPage";
+import CustomerFeedbackPage from "../pages/Customer/CustomerFeedbackPage";
 
 
 const AppRoutes = () => {
@@ -80,6 +81,8 @@ const AppRoutes = () => {
                 <Route path="/shop/jug-status"  element={<JugStatusMainPage />} />
                 <Route path="/profile"          element={<ProfileMainPage />} />
                 <Route path="/notifications"        element={<CustomerNotificationsMainPage />} />
+                <Route path="/feedback"        element={<CustomerFeedbackPage />} />
+
             </Route>
         </Routes>
     </>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import OrderHistoryList from "./components/OrderHistoryList";
 import ViewOrderModal from "./components/ViewOrderModal";
+import ActiveOrderList from "./components/ActiveOrderList";
+import PastOrderList from "./components/PastOrderList";
 
 export interface OrderItem {
     name: string;
@@ -23,6 +24,7 @@ export interface Order {
     preferred_day?: string;
     notes?: string;
     placed_at: string;
+    estimated_arrival?: string;
     items: OrderItem[];
 }
 
@@ -39,9 +41,10 @@ export const MOCK_ORDERS: Order[] = [
         preferred_date: "2026-05-18",
         notes: "Leave at gate if no one's home",
         placed_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        estimated_arrival: "10:45 AM",
         items: [
             { name: "Purified Water", size: "5gal (Exchange)", quantity: 2, subtotal: 70 },
-            { name: "Purified Water", size: "1L",              quantity: 5, subtotal: 75 },
+            { name: "Purified Water", size: "1L", quantity: 5, subtotal: 75 },
         ],
     },
     {
@@ -72,7 +75,7 @@ export const MOCK_ORDERS: Order[] = [
         placed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
         items: [
             { name: "Purified Water", size: "5gal (Exchange)", quantity: 2, subtotal: 70 },
-            { name: "Purified Water", size: "500ml",           quantity: 7, subtotal: 70 },
+            { name: "Purified Water", size: "500ml", quantity: 7, subtotal: 70 },
         ],
     },
     {
@@ -92,14 +95,24 @@ export const MOCK_ORDERS: Order[] = [
     },
 ];
 
+type Tab = "active" | "history";
+
 const OrderHistoryMainPage = () => {
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<Tab>("active");
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
 
     useEffect(() => {
-        document.title = "Order History";
+        document.title = "My Orders";
     }, []);
+
+    const activeOrders = MOCK_ORDERS.filter(
+        (o) => o.status === "pending" || o.status === "confirmed" || o.status === "in_transit"
+    );
+    const pastOrders = MOCK_ORDERS.filter(
+        (o) => o.status === "delivered" || o.status === "cancelled"
+    );
 
     const handleView = (order: Order) => {
         setSelectedOrder(order);
@@ -111,33 +124,65 @@ const OrderHistoryMainPage = () => {
     };
 
     return (
-        <>
-            {/* Page Header */}
-            <div className="mb-6 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="mb-5 flex items-center justify-between">
                 <div>
                     <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">
                         Customer
                     </p>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Order History
-                    </h1>
-                    <p className="text-sm text-gray-400 mt-1">
-                        Track your deliveries and view past orders.
-                    </p>
+                    <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
                 </div>
                 <button
+                    type="button"
                     onClick={() => navigate("/shop")}
-                    className="text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors"
+                    className="text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors cursor-pointer"
                 >
                     + New Order
                 </button>
             </div>
 
-            <OrderHistoryList
-                orders={MOCK_ORDERS}
-                onView={handleView}
-                onTrack={handleTrack}
-            />
+            <div className="flex border-b border-gray-200 mb-5">
+                {([
+                    { key: "active",  label: "My Orders",     count: activeOrders.length },
+                    { key: "history", label: "Order History",  count: pastOrders.length },
+                ] as { key: Tab; label: string; count: number }[]).map((tab) => (
+                    <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold cursor-pointer border-b-2 transition-colors ${
+                            activeTab === tab.key
+                                ? "border-blue-600 text-blue-600"
+                                : "border-transparent text-gray-400 hover:text-gray-600"
+                        }`}
+                    >
+                        {tab.label}
+                        {tab.count > 0 && (
+                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                                activeTab === tab.key
+                                    ? "bg-blue-100 text-blue-600"
+                                    : "bg-gray-100 text-gray-400"
+                            }`}>
+                                {tab.count}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {activeTab === "active" ? (
+                <ActiveOrderList
+                    orders={activeOrders}
+                    onView={handleView}
+                    onTrack={handleTrack}
+                />
+            ) : (
+                <PastOrderList
+                    orders={pastOrders}
+                    onView={handleView}
+                />
+            )}
 
             <ViewOrderModal
                 isOpen={isViewOpen}
@@ -148,7 +193,7 @@ const OrderHistoryMainPage = () => {
                 }}
                 onTrack={handleTrack}
             />
-        </>
+        </div>
     );
 };
 

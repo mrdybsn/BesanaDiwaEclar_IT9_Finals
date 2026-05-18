@@ -3,32 +3,25 @@ import AppHeader from "./AppHeader";
 import AppSidebar from "./AppSidebar";
 import { SidebarProvider } from "../contexts/SidebarContext";
 import { HeaderProvider } from "../contexts/HeaderContext";
-
-const LayoutContent = () => {
-    return (
-        <>
-            <div>
-                <AppSidebar />
-            </div>
-            <div>
-                <AppHeader />
-            </div>
-            <div className="p-20 -mml-14 sm:ml-52">
-                <Outlet />
-            </div>
-        </>
-    );
-};
+import { NotificationProvider } from "../contexts/NotificationContext";
 
 const AppLayout = () => {
     return (
-        <>
-            <HeaderProvider>
-                <SidebarProvider>
-                    <LayoutContent />
-                </SidebarProvider>
-            </HeaderProvider>
-        </>
+        <NotificationProvider>
+            <SidebarProvider>
+                <HeaderProvider>
+                    <div className="min-h-screen bg-gray-50">
+                        <AppHeader />
+                        <AppSidebar />
+                        <main className="p-4 sm:ml-64 mt-14">
+                            <div className="p-4">
+                                <Outlet />
+                            </div>
+                        </main>
+                    </div>
+                </HeaderProvider>
+            </SidebarProvider>
+        </NotificationProvider>
     );
 };
 
