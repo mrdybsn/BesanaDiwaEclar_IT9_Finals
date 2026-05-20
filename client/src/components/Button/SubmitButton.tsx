@@ -4,6 +4,7 @@ import Spinner from "../Spinner/Spinner";
 interface SubmitButtonProps {
     label: string;
     newClassName?: string;
+    disabled?: boolean;
     className?: string;
     loading?: boolean;
     loadingLabel?: string;

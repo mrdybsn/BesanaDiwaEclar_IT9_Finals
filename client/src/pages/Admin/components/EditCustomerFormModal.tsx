@@ -2,8 +2,8 @@ import type { FC } from "react";
 import Modal from "../../../components/Modal";
 import FloatingLabelInput from "../../../components/Input/FloatingLabelInput";
 import FloatingLabelSelect from "../../../components/Select/FloatingLabelSelect";
-import CloseButton from "../../../components/Button/CloseButton";
 import SubmitButton from "../../../components/Button/SubmitButton";
+import CloseButton from "../../../components/Button/CloseButton";
 
 interface EditCustomerFormModalProps {
     isOpen: boolean;
