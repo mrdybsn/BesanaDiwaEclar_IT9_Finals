@@ -1,14 +1,44 @@
 import { useEffect } from "react";
-import { useModal } from "../../hooks/useModal";
-import ProductList from "./components/ProductList";
 import AddProductFormModal from "./components/AddProductFormModal";
 import EditProductFormModal from "./components/EditProductFormModal";
 import DeleteProductFormModal from "./components/DeleteProductFormModal";
+import ProductList from "./components/ProductList";
+import { useModal } from "../../hooks/useModal";
+import type { ProductColumns } from "../../interfaces/ProductInterfaces";
+import { useToastMessage } from "../../hooks/useToastMessage";
+import ToastMessage from "../../components/ToastMessage/ToastMessage";
+import { useRefresh } from "../../hooks/useRefresh";
 
-const ProductMainPage = () => {
-    const addModal = useModal(false);
-    const editModal = useModal(false);
-    const deleteModal = useModal(false);
+const ProductManagementPage = () => {
+    const {
+        isOpen: isAddProductFormModalOpen,
+        openModal: openAddProductFormModal,
+        closeModal: closeAddProductFormModal,
+    } = useModal<undefined>(false);
+
+    const {
+        isOpen: isEditProductFormModalOpen,
+        selectedUser: selectedProductForEdit,
+        openModal: openEditProductFormModal,
+        closeModal: closeEditProductFormModal,
+    } = useModal<ProductColumns>(false);
+
+    const {
+        isOpen: isDeleteProductFormModalOpen,
+        selectedUser: selectedProductForDelete,
+        openModal: openDeleteProductFormModal,
+        closeModal: closeDeleteProductFormModal,
+    } = useModal<ProductColumns>(false);
+
+    const {
+        message: toastMessage,
+        isFailed: toastIsFailed,
+        isVisible: toastMessageIsVisible,
+        showToastMessage,
+        closeToastMessage,
+    } = useToastMessage("", false, false);
+
+    const { refresh, handleRefresh } = useRefresh(false);
 
     useEffect(() => {
         document.title = "Product Management";
@@ -16,37 +46,49 @@ const ProductMainPage = () => {
 
     return (
         <>
-            <div className="mb-4 flex justify-end">
-                <button
-                    type="button"
-                    onClick={addModal.openModal}
-                    className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium cursor-pointer rounded-lg shadow-lg"
-                >
-                    + Add Product
-                </button>
-            </div>
-
-            <ProductList
-                onEdit={editModal.openModal}
-                onDelete={deleteModal.openModal}
+            <ToastMessage
+                message={toastMessage}
+                isFailed={toastIsFailed}
+                isVisible={toastMessageIsVisible}
+                onClose={closeToastMessage}
             />
 
             <AddProductFormModal
-                isOpen={addModal.isOpen}
-                onClose={addModal.closeModal}
+                isOpen={isAddProductFormModalOpen}
+                onClose={closeAddProductFormModal}
+                onProductAdded={showToastMessage}
+                refreshKey={handleRefresh}
             />
 
-            <EditProductFormModal
-                isOpen={editModal.isOpen}
-                onClose={editModal.closeModal}
-            />
+            {selectedProductForEdit && (
+                <EditProductFormModal
+                    isOpen={isEditProductFormModalOpen}
+                    onClose={closeEditProductFormModal}
+                    product={selectedProductForEdit}
+                    onProductUpdated={showToastMessage}
+                    refreshKey={handleRefresh}
+                />
+            )}
 
-            <DeleteProductFormModal
-                isOpen={deleteModal.isOpen}
-                onClose={deleteModal.closeModal}
+            {selectedProductForDelete && (
+                <DeleteProductFormModal
+                    isOpen={isDeleteProductFormModalOpen}
+                    onClose={closeDeleteProductFormModal}
+                    product={selectedProductForDelete}
+                    onProductDeleted={showToastMessage}
+                    refreshKey={handleRefresh}
+                />
+            )}
+
+            <ProductList
+                onAddProduct={openAddProductFormModal}
+                onEditProduct={(product: ProductColumns) => openEditProductFormModal(product)}
+                onDeleteProduct={(product: ProductColumns) => openDeleteProductFormModal(product)}
+                onAvailabilityToggled={showToastMessage}
+                refreshKey={refresh}
             />
         </>
     );
 };
 
-export default ProductMainPage;
+export default ProductManagementPage;

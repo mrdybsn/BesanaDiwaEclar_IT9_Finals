@@ -1,68 +1,65 @@
-import type { Product } from "../POSMainPage";
+import type { ProductColumns } from "../../../interfaces/ProductInterfaces";
+
+const DEFAULT_PRODUCT_IMAGE = "https://ui-avatars.com/api/?background=DBEAFE&color=1D4ED8&name=";
 
 interface ProductCardProps {
-    product: Product;
-    onAddToCart: (product: Product) => void;
+    product: ProductColumns;
+    onAddToCart: (product: ProductColumns) => void;
 }
 
-const productImageMap: Record<number, string> = {
-    1: "https://images.unsplash.com/photo-1536939459926-301728717817?w=200&q=80", // small water bottle
-    2: "https://images.unsplash.com/photo-1624958723474-76cfe7a7c44e?w=200&q=80", // 1L water bottle
-    3: "https://images.unsplash.com/photo-1563351672-62b74891a28a?w=200&q=80",    // blue gallon jug exchange
-    4: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&q=80",    // new gallon container
-};
-
-const productBgMap: Record<number, string> = {
-    1: "bg-cyan-50",
-    2: "bg-blue-50",
-    3: "bg-indigo-50",
-    4: "bg-sky-50",
-};
-
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
-    const imageSrc = productImageMap[product.product_id];
-    const bgColor = productBgMap[product.product_id] ?? "bg-gray-50";
+    const imageSrc = product.image
+        ? product.image
+        : `${DEFAULT_PRODUCT_IMAGE}${encodeURIComponent(product.name)}`;
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-4 flex gap-4 items-start">
+        <div
+            className={`bg-white rounded-2xl border shadow-sm flex items-center gap-4 p-4 transition-all ${
+                !product.is_available
+                    ? "opacity-50 pointer-events-none border-gray-100"
+                    : "border-gray-100 hover:shadow-md"
+            }`}
+        >
             {/* Product Image */}
-            <div className={`${bgColor} rounded-xl w-20 h-20 flex items-center justify-center shrink-0 overflow-hidden`}>
+            <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 overflow-hidden">
                 <img
                     src={imageSrc}
-                    alt={`${product.name} ${product.size}`}
+                    alt={product.name}
                     className="w-full h-full object-cover rounded-xl"
                     onError={(e) => {
-                        // fallback to emoji if image fails
-                        (e.target as HTMLImageElement).style.display = "none";
+                        (e.target as HTMLImageElement).src =
+                            `${DEFAULT_PRODUCT_IMAGE}${encodeURIComponent(product.name)}`;
                     }}
                 />
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800 leading-tight">
-                    {product.size}
+                <p className="text-sm font-bold text-gray-800">{product.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{product.size} — {product.unit}</p>
+                <p className="text-sm font-extrabold text-blue-600 mt-1">
+                    ₱{Number(product.price).toFixed(2)}
+                    {Number(product.container_deposit) > 0 && (
+                        <span className="text-xs text-yellow-500 font-normal ml-1">
+                            +₱{Number(product.container_deposit).toFixed(2)} deposit
+                        </span>
+                    )}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
-                    {product.description}
-                </p>
-                <p className="text-sm font-bold text-gray-900 mt-2">
-                    Price: ₱{product.price.toFixed(2)}
-                </p>
-                {product.container_deposit > 0 && (
-                    <p className="text-xs text-yellow-600 mt-0.5">
-                        Includes ₱{product.container_deposit.toFixed(2)} container deposit
+                {product.stock <= product.low_stock_threshold && (
+                    <p className="text-xs text-red-400 mt-0.5">
+                        Low stock ({product.stock} left)
                     </p>
                 )}
-
-                <button
-                    type="button"
-                    onClick={() => onAddToCart(product)}
-                    className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-150"
-                >
-                    Add to cart
-                </button>
             </div>
+
+            {/* Add to Cart */}
+            <button
+                type="button"
+                onClick={() => onAddToCart(product)}
+                className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg flex items-center justify-center cursor-pointer transition-colors shrink-0"
+            >
+                +
+            </button>
         </div>
     );
 };

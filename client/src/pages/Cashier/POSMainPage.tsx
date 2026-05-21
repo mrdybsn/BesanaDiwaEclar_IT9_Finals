@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import ProductCard from "./components/ProductCard";
 import OrderSummary from "./components/OrderSummary";
 import PaymentModal from "./components/PaymentModal";
+import type { ProductColumns } from "../../interfaces/ProductInterfaces";
+import ProductService from "../../services/ProductService";
 
 export interface OrderItem {
     product_id: number;
@@ -15,84 +17,55 @@ export interface OrderItem {
     subtotal: number;
 }
 
-export interface Product {
-    product_id: number;
-    name: string;
-    size: string;
-    unit: string;
-    price: number;
-    container_deposit: number;
-    description: string;
-}
-
-const products: Product[] = [
-    {
-        product_id: 1,
-        name: "Purified Water",
-        size: "500ml",
-        unit: "bottle",
-        price: 10.00,
-        container_deposit: 0.00,
-        description: "Small bottle — 500ml purified water",
-    },
-    {
-        product_id: 2,
-        name: "Purified Water",
-        size: "1L",
-        unit: "bottle",
-        price: 15.00,
-        container_deposit: 0.00,
-        description: "Regular bottle — 1 liter purified water",
-    },
-    {
-        product_id: 3,
-        name: "Purified Water",
-        size: "5gal (Exchange)",
-        unit: "gallon",
-        price: 35.00,
-        container_deposit: 0.00,
-        description: "Customer brings empty gallon — refill only",
-    },
-    {
-        product_id: 4,
-        name: "Purified Water",
-        size: "5gal (New Container)",
-        unit: "gallon",
-        price: 185.00,
-        container_deposit: 150.00,
-        description: "New gallon container + water — includes ₱150 deposit",
-    },
-];
-
 const POSMainPage = () => {
+    const [products, setProducts] = useState<ProductColumns[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
     useEffect(() => {
         document.title = "POS — Walk-in Sales";
+        fetchProducts();
     }, []);
 
-    const handleAddToCart = (product: Product) => {
+    const fetchProducts = async () => {
+        setIsLoading(true);
+        try {
+            // Load all available products (no pagination needed for POS)
+            const response = await ProductService.loadProducts(1, "");
+            const allProducts = response.data.products.data.filter(
+                (p: ProductColumns) => p.is_available
+            );
+            setProducts(allProducts);
+        } catch (error) {
+            console.error("Failed to load products:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleAddToCart = (product: ProductColumns) => {
         setOrderItems((prev) => {
             const existing = prev.findIndex((o) => o.product_id === product.product_id);
             if (existing !== -1) {
                 const updated = [...prev];
                 updated[existing].quantity += 1;
-                updated[existing].subtotal = updated[existing].quantity * updated[existing].price;
+                updated[existing].subtotal =
+                    updated[existing].quantity * updated[existing].price;
                 return updated;
             }
             return [
                 ...prev,
                 {
-                    product_id: product.product_id,
-                    name: product.name,
-                    size: product.size,
-                    unit: product.unit,
-                    price: product.price,
-                    container_deposit: product.container_deposit,
-                    quantity: 1,
-                    has_gallon: product.size.includes("Exchange"),
-                    subtotal: product.price,
+                    product_id:        product.product_id,
+                    name:              product.name,
+                    size:              product.size,
+                    unit:              product.unit,
+                    price:             Number(product.price),
+                    container_deposit: Number(product.container_deposit),
+                    quantity:          1,
+                    has_gallon:        product.size === "5gal",
+                    subtotal:          Number(product.price),
                 },
             ];
         });
@@ -103,7 +76,10 @@ const POSMainPage = () => {
     };
 
     const handleUpdateQuantity = (index: number, quantity: number) => {
-        if (quantity < 1) return;
+        if (quantity < 1) {
+            handleRemoveItem(index);
+            return;
+        }
         setOrderItems((prev) => {
             const updated = [...prev];
             updated[index].quantity = quantity;
@@ -119,21 +95,34 @@ const POSMainPage = () => {
     return (
         <>
             <div className="flex gap-4 items-start">
-
                 {/* Left — Product Cards */}
                 <div className="flex-1">
                     <h2 className="text-base font-semibold text-gray-700 mb-3">
                         Products
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {products.map((product) => (
-                            <ProductCard
-                                key={product.product_id}
-                                product={product}
-                                onAddToCart={handleAddToCart}
-                            />
-                        ))}
-                    </div>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-40 text-blue-600 gap-2">
+                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                            </svg>
+                            <span className="text-sm">Loading products...</span>
+                        </div>
+                    ) : products.length === 0 ? (
+                        <div className="flex justify-center items-center h-40 text-gray-400 text-sm">
+                            No available products.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {products.map((product) => (
+                                <ProductCard
+                                    key={product.product_id}
+                                    product={product}
+                                    onAddToCart={handleAddToCart}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Right — Order Summary */}
