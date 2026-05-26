@@ -26,7 +26,12 @@ AxiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
-        if (error.response && error.response.status !== 422) {
+        if (error.response?.status === 401) {
+            localStorage.removeItem("token");
+            if (!window.location.pathname.startsWith("/login")) {
+                window.location.href = "/login";
+            }
+        } else if (error.response && error.response.status !== 422) {
             console.error("Unexpected response error: ", error);
         }
 

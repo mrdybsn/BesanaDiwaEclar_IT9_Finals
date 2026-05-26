@@ -8,6 +8,7 @@ import type { UserColumns } from "../../interfaces/UserInterfaces";
 import { useToastMessage } from "../../hooks/useToastMessage";
 import { useRefresh } from "../../hooks/useRefresh";
 import ToastMessage from "../../components/ToastMessage/ToastMessage";
+import PageHeader from "../../components/Layout/PageHeader";
 
 const UserManagementPage = () => {
     const {
@@ -41,11 +42,16 @@ const UserManagementPage = () => {
     const { refresh, handleRefresh } = useRefresh(false);
 
     useEffect(() => {
-        document.title = "User Management";
+        document.title = "Riders Management";
     }, []);
 
     return (
         <>
+            <PageHeader
+                title="Riders Management"
+                description="Manage your riders and their account statuses."
+            />
+
             <ToastMessage
                 message={toastMessage}
                 isFailed={toastIsFailed}

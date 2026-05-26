@@ -1,0 +1,128 @@
+.thermal-receipt {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #111;
+    width: 280px;
+    max-width: 100%;
+    margin: 0 auto;
+    background: #fff;
+}
+
+.receipt-tear {
+    height: 10px;
+    background: #fff;
+    mask-image: radial-gradient(circle at 6px 0, transparent 5px, #000 5px);
+    mask-size: 12px 10px;
+    mask-repeat: repeat-x;
+}
+
+.receipt-tear-bottom {
+    transform: rotate(180deg);
+    margin-top: 4px;
+}
+
+.receipt-body {
+    padding: 12px 14px 8px;
+}
+
+.shop-name {
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+}
+
+.shop-line {
+    text-align: center;
+    margin: 0;
+    font-size: 11px;
+}
+
+.divider {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: -0.5px;
+    margin: 8px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.receipt-title {
+    text-align: center;
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.meta-line {
+    margin: 2px 0;
+    font-size: 11px;
+}
+
+.debt-note {
+    font-weight: 700;
+}
+
+.items-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin: 8px 0 4px;
+    border-bottom: 1px dashed #999;
+    padding-bottom: 4px;
+}
+
+.item-row {
+    margin: 3px 0;
+    font-size: 11px;
+    white-space: pre;
+}
+
+.total-row {
+    font-weight: 700;
+    font-size: 14px;
+    margin: 6px 0;
+    white-space: pre;
+}
+
+.thank-you {
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 10px 0 8px;
+}
+
+.barcode {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1px;
+    height: 40px;
+    margin-top: 8px;
+}
+
+.barcode-bar {
+    display: inline-block;
+    height: 100%;
+    background: #111;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .thermal-receipt,
+    .thermal-receipt * {
+        visibility: visible;
+    }
+    .thermal-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+    }
+}

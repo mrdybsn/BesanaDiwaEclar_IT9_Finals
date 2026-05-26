@@ -1,13 +1,11 @@
 import AxiosInstance from "./AxiosInstance";
 
 const UserService = {
-    loadUsers: async (page: number, search: string) => {
+    loadUsers: async (page: number, search: string, role?: string) => {
         try {
-            const response = await AxiosInstance.get(
-                search
-                    ? `/user/loadUsers?page=${page}&search=${search}`
-                    : `/user/loadUsers?page=${page}`
-            );
+            const response = await AxiosInstance.get(`/admin/users`, {
+                params: { page, search, role: role ?? "rider" }
+            });
             return response;
         } catch (error) {
             throw error;
@@ -16,26 +14,26 @@ const UserService = {
 
     loadRiders: async () => {
         try {
-            const response = await AxiosInstance.get(`/user/loadRiders`);
+            const response = await AxiosInstance.get(`/admin/riders`);
             return response;
         } catch (error) {
             throw error;
         }
     },
 
-    storeUser: async (data: any) => {
+    storeUser: async (data: FormData) => {
         try {
-            const response = await AxiosInstance.post(`/user/storeUser`, data);
+            const response = await AxiosInstance.post(`/admin/users`, data);
             return response;
         } catch (error) {
             throw error;
         }
     },
 
-    updateUser: async (userId: string | number, data: any) => {
+    updateUser: async (userId: string | number, data: FormData) => {
         try {
             const response = await AxiosInstance.post(
-                `/user/updateUser/${userId}`,
+                `/admin/users/${userId}`,
                 data
             );
             return response;
@@ -46,8 +44,8 @@ const UserService = {
 
     updateStatus: async (userId: string | number) => {
         try {
-            const response = await AxiosInstance.put(
-                `/user/updateStatus/${userId}`
+            const response = await AxiosInstance.patch(
+                `/admin/users/${userId}/status`
             );
             return response;
         } catch (error) {
@@ -57,8 +55,8 @@ const UserService = {
 
     destroyUser: async (userId: string | number) => {
         try {
-            const response = await AxiosInstance.put(
-                `/user/destroyUser/${userId}`
+            const response = await AxiosInstance.delete(
+                `/admin/users/${userId}`
             );
             return response;
         } catch (error) {

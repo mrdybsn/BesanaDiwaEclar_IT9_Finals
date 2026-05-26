@@ -57,6 +57,10 @@ interface MapViewProps {
 }
 
 const MapView = ({ delivery, riderLocation }: MapViewProps) => {
+    if (!delivery.has_valid_gps) {
+        return null;
+    }
+
     const customerLocation = { lat: delivery.gps_lat, lng: delivery.gps_lng };
 
     return (

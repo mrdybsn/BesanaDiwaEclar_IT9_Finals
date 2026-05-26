@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import DeliveryList from "./components/DeliveryList";
 import ViewDeliveryModal from "./components/ViewDeliveryModal";
+import PageHeader from "../../components/Layout/PageHeader";
 
 export interface DeliveryTask {
     delivery_id: number;
@@ -15,7 +16,8 @@ export interface DeliveryTask {
     total_amount: number;
     payment_method: string;
     payment_status: "unpaid" | "paid";
-    status: "pending" | "in_transit" | "delivered";
+    is_recurring: boolean;
+    status: "pending" | "assigned" | "in_transit" | "delivered";
     scheduled_date: string;
     notes?: string;
 }
@@ -23,6 +25,7 @@ export interface DeliveryTask {
 const RiderTasksMainPage = () => {
     const [selectedDelivery, setSelectedDelivery] = useState<DeliveryTask | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         document.title = "My Deliveries";
@@ -35,25 +38,13 @@ const RiderTasksMainPage = () => {
 
     return (
         <>
-            {/* Page Header */}
-            <div className="mb-6">
-                <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">
-                    Rider
-                </p>
-                <h1 className="text-2xl font-bold text-gray-800">
-                    Today's Deliveries
-                </h1>
-                <p className="text-sm text-gray-400 mt-1">
-                    {new Date().toLocaleDateString("en-PH", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                    })}
-                </p>
-            </div>
+            <PageHeader
+                portal="rider"
+                title="My Deliveries"
+                description="Navigate to the customer address. Collect only if unpaid or weekly recurring."
+            />
 
-            <DeliveryList onView={handleView} />
+            <DeliveryList onView={handleView} refreshKey={refreshKey} />
 
             <ViewDeliveryModal
                 isOpen={isViewOpen}
@@ -62,6 +53,7 @@ const RiderTasksMainPage = () => {
                     setIsViewOpen(false);
                     setSelectedDelivery(null);
                 }}
+                onUpdated={() => setRefreshKey((k) => k + 1)}
             />
         </>
     );

@@ -3,11 +3,9 @@ import AxiosInstance from "./AxiosInstance";
 const ProductService = {
     loadProducts: async (page: number, search: string) => {
         try {
-            const response = await AxiosInstance.get(
-                search
-                    ? `/product/loadProducts?page=${page}&search=${search}`
-                    : `/product/loadProducts?page=${page}`
-            );
+            const response = await AxiosInstance.get(`/admin/products`, {
+                params: { page, search }
+            });
             return response;
         } catch (error) {
             throw error;
@@ -16,7 +14,7 @@ const ProductService = {
 
     getProduct: async (productId: string | number) => {
         try {
-            const response = await AxiosInstance.get(`/product/getProduct/${productId}`);
+            const response = await AxiosInstance.get(`/admin/products/${productId}`);
             return response;
         } catch (error) {
             throw error;
@@ -25,7 +23,7 @@ const ProductService = {
 
     storeProduct: async (data: FormData) => {
         try {
-            const response = await AxiosInstance.post(`/product/storeProduct`, data);
+            const response = await AxiosInstance.post(`/admin/products`, data);
             return response;
         } catch (error) {
             throw error;
@@ -35,7 +33,7 @@ const ProductService = {
     updateProduct: async (productId: string | number, data: FormData) => {
         try {
             const response = await AxiosInstance.post(
-                `/product/updateProduct/${productId}`,
+                `/admin/products/${productId}`,
                 data
             );
             return response;
@@ -46,8 +44,8 @@ const ProductService = {
 
     toggleAvailable: async (productId: string | number) => {
         try {
-            const response = await AxiosInstance.put(
-                `/product/toggleAvailable/${productId}`
+            const response = await AxiosInstance.patch(
+                `/admin/products/${productId}/available`
             );
             return response;
         } catch (error) {
@@ -57,8 +55,8 @@ const ProductService = {
 
     destroyProduct: async (productId: string | number) => {
         try {
-            const response = await AxiosInstance.put(
-                `/product/destroyProduct/${productId}`
+            const response = await AxiosInstance.delete(
+                `/admin/products/${productId}`
             );
             return response;
         } catch (error) {

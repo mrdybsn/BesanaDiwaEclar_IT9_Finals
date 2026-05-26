@@ -1,90 +1,85 @@
-import type { FC } from "react";
+import type { FC, ReactNode } from "react";
 import Modal from "../../../components/Modal";
-import FloatingLabelInput from "../../../components/Input/FloatingLabelInput";
 import CloseButton from "../../../components/Button/CloseButton";
+import type { Remittance } from "../../../services/RemittanceService";
 
 interface ViewRemittanceModalProps {
     isOpen: boolean;
     onClose: () => void;
+    remittance: Remittance | null;
 }
 
-const ViewRemittanceModal: FC<ViewRemittanceModalProps> = ({ isOpen, onClose }) => {
+const statusLabels: Record<string, string> = {
+    pending: "Pending",
+    verified: "Verified",
+    discrepancy: "Discrepancy",
+};
+
+const Row: FC<{ label: string; value?: ReactNode }> = ({ label, value }) => (
+    <div>
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="text-sm font-medium text-gray-700">{value ?? "—"}</p>
+    </div>
+);
+
+const ViewRemittanceModal: FC<ViewRemittanceModalProps> = ({ isOpen, onClose, remittance }) => {
+    const riderName = remittance?.rider
+        ? `${remittance.rider.last_name}, ${remittance.rider.first_name}`
+        : "—";
+
+    const collected = Number(remittance?.collected_amount ?? 0);
+    const remitted = Number(remittance?.remitted_amount ?? 0);
+    const discrepancy = collected - remitted;
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
-            <div className="bg-white p-4 rounded-lg">
-                <h1 className="text-2xl border-b border-gray-100 p-4 font-semibold mb-4">
+            <div className="bg-white p-6 rounded-lg w-full max-w-lg">
+                <h1 className="text-xl font-semibold text-gray-800 border-b border-gray-100 pb-4 mb-5">
                     Remittance Details
                 </h1>
-                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 mb-4">
-                    <div className="col-span-2 md:col-span-1">
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Rider"
-                                type="text"
-                                name="rider_name"
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Delivery ID"
-                                type="text"
-                                name="delivery_id"
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Date"
-                                type="date"
-                                name="date"
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Status"
-                                type="text"
-                                name="status"
-                                readOnly
-                            />
-                        </div>
+
+                {!remittance ? (
+                    <p className="text-sm text-gray-400 text-center py-8">No remittance selected.</p>
+                ) : (
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-5">
+                        <Row label="Remittance ID" value={`#${remittance.remittance_id}`} />
+                        <Row label="Status" value={statusLabels[remittance.status] ?? remittance.status} />
+                        <Row label="Rider" value={riderName} />
+                        <Row label="Delivery ID" value={`#${remittance.delivery_id}`} />
+                        <Row label="Date" value={remittance.date} />
+                        <Row
+                            label="Order"
+                            value={
+                                remittance.delivery?.order?.order_id
+                                    ? `#${remittance.delivery.order.order_id}`
+                                    : "—"
+                            }
+                        />
+                        <Row
+                            label="Collected Amount"
+                            value={`₱${collected.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
+                        />
+                        <Row
+                            label="Remitted Amount"
+                            value={`₱${remitted.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
+                        />
+                        <Row
+                            label="Difference"
+                            value={
+                                <span className={discrepancy === 0 ? "text-green-600" : "text-red-600"}>
+                                    {discrepancy >= 0 ? "" : "−"}₱
+                                    {Math.abs(discrepancy).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                                </span>
+                            }
+                        />
+                        {remittance.notes && (
+                            <div className="col-span-2">
+                                <Row label="Notes" value={remittance.notes} />
+                            </div>
+                        )}
                     </div>
-                    <div className="col-span-2 md:col-span-1">
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Collected Amount (₱)"
-                                type="number"
-                                name="collected_amount"
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Remitted Amount (₱)"
-                                type="number"
-                                name="remitted_amount"
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Discrepancy (₱)"
-                                type="number"
-                                name="discrepancy"
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelInput
-                                label="Notes"
-                                type="text"
-                                name="notes"
-                                readOnly
-                            />
-                        </div>
-                    </div>
-                </div>
+                )}
+
                 <div className="flex justify-end gap-2">
                     <CloseButton label="Close" onClose={onClose} />
                 </div>

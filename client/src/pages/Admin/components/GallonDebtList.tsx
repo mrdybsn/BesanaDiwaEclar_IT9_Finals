@@ -1,123 +1,85 @@
-import type { FC } from "react";
+import { useEffect, useState, type FC } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/Table";
+import GallonDebtService, { type GallonDebt } from "../../../services/GallonDebtService";
 
 interface GallonDebtListProps {
     onResolve: () => void;
     onView: () => void;
     onNotify: () => void;
+    refreshKey?: boolean;
 }
 
-const debts = [
-    {
-        debt_id: 1,
-        customer_name: "Dela Cruz, Juan M.",
-        gallons_borrowed: 5,
-        gallons_returned: 2,
-        gallons_owed: 3,
-        notes: "Borrowed last Monday delivery.",
-    },
-    {
-        debt_id: 2,
-        customer_name: "Santos, Maria L.",
-        gallons_borrowed: 3,
-        gallons_returned: 3,
-        gallons_owed: 0,
-        notes: "Fully returned.",
-    },
-    {
-        debt_id: 3,
-        customer_name: "Reyes, Carlo B.",
-        gallons_borrowed: 8,
-        gallons_returned: 4,
-        gallons_owed: 4,
-        notes: "Promised to return Friday.",
-    },
-    {
-        debt_id: 4,
-        customer_name: "Garcia, Ana P.",
-        gallons_borrowed: 2,
-        gallons_returned: 0,
-        gallons_owed: 2,
-        notes: "",
-    },
-];
+const GallonDebtList: FC<GallonDebtListProps> = ({ refreshKey }) => {
+    const [debts, setDebts] = useState<GallonDebt[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState("");
 
-const GallonDebtList: FC<GallonDebtListProps> = ({ onResolve, onView, onNotify }) => {
+    useEffect(() => {
+        const fetch = async () => {
+            setLoading(true);
+            try {
+                const res = await GallonDebtService.loadDebts({ search: search || undefined });
+                setDebts(res.debts?.data ?? []);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetch();
+    }, [search, refreshKey]);
+
+    const getCustomerName = (d: GallonDebt) => {
+        if (!d.customer) return "—";
+        return `${d.customer.last_name}, ${d.customer.first_name}`;
+    };
+
     return (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <div className="max-w-full max-h-[calc(100vh)] overflow-x-auto">
+            <div className="p-4 border-b border-gray-100">
+                <input
+                    type="text"
+                    placeholder="Search customers..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+            <div className="max-w-full overflow-x-auto">
                 <Table>
                     <TableHeader className="border-b border-gray-200 bg-blue-600 sticky text-white top-0 text-xs">
                         <TableRow>
-                            <TableCell isHeader className="px-5 py-3 font-medium text-center">No.</TableCell>
-                            <TableCell isHeader className="px-5 py-3 font-medium text-start">Customer Name</TableCell>
+                            <TableCell isHeader className="px-5 py-3 font-medium text-start">Customer</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">Borrowed</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">Returned</TableCell>
-                            <TableCell isHeader className="px-5 py-3 font-medium text-center">Still Owes</TableCell>
-                            <TableCell isHeader className="px-5 py-3 font-medium text-center">Status</TableCell>
-                            <TableCell isHeader className="px-5 py-3 font-medium text-center">Action</TableCell>
+                            <TableCell isHeader className="px-5 py-3 font-medium text-center">Owed</TableCell>
+                            <TableCell isHeader className="px-5 py-3 font-medium text-start">Notes</TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 text-gray-500 text-sm">
-                        {debts.map((debt, index) => (
-                            <TableRow className="hover:bg-gray-100" key={index}>
-                                <TableCell className="px-4 py-3 text-center">{debt.debt_id}</TableCell>
-                                <TableCell className="px-4 py-3 text-start">{debt.customer_name}</TableCell>
-                                <TableCell className="px-4 py-3 text-center">
-                                    {debt.gallons_borrowed} jug{debt.gallons_borrowed !== 1 ? "s" : ""}
-                                </TableCell>
-                                <TableCell className="px-4 py-3 text-center">
-                                    {debt.gallons_returned} jug{debt.gallons_returned !== 1 ? "s" : ""}
-                                </TableCell>
-                                <TableCell className="px-4 py-3 text-center font-semibold">
-                                    {debt.gallons_owed > 0 ? (
-                                        <span className="text-red-600">
-                                            {debt.gallons_owed} jug{debt.gallons_owed !== 1 ? "s" : ""}
-                                        </span>
-                                    ) : (
-                                        <span className="text-green-600">0</span>
-                                    )}
-                                </TableCell>
-                                <TableCell className="px-4 py-3 text-center">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                        debt.gallons_owed === 0
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-red-100 text-red-700"
-                                    }`}>
-                                        {debt.gallons_owed === 0 ? "Settled" : "With Debt"}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="px-4 py-3 text-center">
-                                    <div className="flex gap-3 justify-center">
-                                        <button
-                                            type="button"
-                                            onClick={onView}
-                                            className="text-blue-600 hover:underline font-medium"
-                                        >
-                                            View
-                                        </button>
-                                        {debt.gallons_owed > 0 && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={onNotify}
-                                                    className="text-yellow-600 hover:underline font-medium"
-                                                >
-                                                    Notify
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={onResolve}
-                                                    className="text-green-600 hover:underline font-medium"
-                                                >
-                                                    Resolve
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </TableCell>
+                        {loading ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="py-8 text-center text-blue-600">Loading…</TableCell>
                             </TableRow>
-                        ))}
+                        ) : debts.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="py-8 text-center text-gray-400">No gallon debts recorded.</TableCell>
+                            </TableRow>
+                        ) : (
+                            debts.map((d) => (
+                                <TableRow key={d.gallon_debt_id}>
+                                    <TableCell className="px-5 py-3 font-medium text-gray-800">{getCustomerName(d)}</TableCell>
+                                    <TableCell className="px-5 py-3 text-center">{d.gallons_borrowed}</TableCell>
+                                    <TableCell className="px-5 py-3 text-center">{d.gallons_returned}</TableCell>
+                                    <TableCell className="px-5 py-3 text-center">
+                                        <span className={`font-bold ${d.gallons_owed > 0 ? "text-red-600" : "text-green-600"}`}>
+                                            {d.gallons_owed}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="px-5 py-3 text-xs text-gray-400">{d.notes ?? "—"}</TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </div>

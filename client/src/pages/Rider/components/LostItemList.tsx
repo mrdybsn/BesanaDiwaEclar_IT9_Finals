@@ -1,31 +1,12 @@
+import { useEffect, useState } from "react";
 import { Table } from "lucide-react";
 import type { LostItemReport } from "../RiderLostItemMainPage";
 import { TableBody, TableCell, TableHeader, TableRow } from "../../../components/Table";
+import LostItemService from "../../../services/LostItemService";
 
-const hardcodedReports: LostItemReport[] = [
-    {
-        report_id: 1,
-        customer_name: "Maria Santos",
-        delivery_address: "123 Rizal St., Brgy. Baybay, Roxas City",
-        item_description: "5 Gallon jug — cracked handle",
-        item_type: "gallon",
-        quantity: 1,
-        notes: "Customer said it was already cracked when delivered.",
-        reported_at: "2026-05-17 09:30 AM",
-        status: "reviewed",
-    },
-    {
-        report_id: 2,
-        customer_name: "Ana Reyes",
-        delivery_address: "78 Lawaan Rd., Brgy. Milibili, Roxas City",
-        item_description: "Gallon cap — missing on arrival",
-        item_type: "cap",
-        quantity: 2,
-        notes: "Caps were missing from the batch loaded this morning.",
-        reported_at: "2026-05-17 11:15 AM",
-        status: "pending",
-    },
-];
+interface LostItemListProps {
+    refreshKey: number;
+}
 
 const itemTypeBadge: Record<string, string> = {
     gallon: "bg-blue-100 text-blue-700",
@@ -39,10 +20,39 @@ const statusBadge = {
     reviewed: "bg-green-100 text-green-700",
 };
 
-const LostItemList = () => {
+const LostItemList = ({ refreshKey }: LostItemListProps) => {
+    const [reports, setReports] = useState<LostItemReport[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await LostItemService.loadReports();
+                setReports(data);
+            } catch {
+                setError("Could not load reports.");
+                setReports([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [refreshKey]);
+
+    if (loading) {
+        return <p className="text-sm text-gray-400 text-center py-12">Loading reports…</p>;
+    }
+
+    if (error) {
+        return <p className="text-sm text-red-500 text-center py-12">{error}</p>;
+    }
+
     return (
         <>
-            {hardcodedReports.length === 0 ? (
+            {reports.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <p className="text-4xl mb-3">📋</p>
                     <p className="text-sm text-gray-400">No reports submitted yet.</p>
@@ -80,15 +90,13 @@ const LostItemList = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-gray-100 text-gray-500 text-sm">
-                                {hardcodedReports.map((report, index) => (
-                                    <TableRow className="hover:bg-gray-50" key={index}>
+                                {reports.map((report, index) => (
+                                    <TableRow className="hover:bg-gray-50" key={report.report_id}>
                                         <TableCell className="px-4 py-3 text-center">
-                                            {report.report_id}
+                                            {index + 1}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-start">
-                                            <p className="font-medium text-gray-800">
-                                                {report.customer_name}
-                                            </p>
+                                            <p className="font-medium text-gray-800">{report.customer_name}</p>
                                             <p className="text-xs text-gray-400 mt-0.5">
                                                 {report.delivery_address}
                                             </p>
@@ -97,7 +105,9 @@ const LostItemList = () => {
                                             {report.item_description}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-center">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${itemTypeBadge[report.item_type]}`}>
+                                            <span
+                                                className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${itemTypeBadge[report.item_type]}`}
+                                            >
                                                 {report.item_type}
                                             </span>
                                         </TableCell>
@@ -111,7 +121,9 @@ const LostItemList = () => {
                                             {report.reported_at}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-center">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusBadge[report.status]}`}>
+                                            <span
+                                                className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusBadge[report.status]}`}
+                                            >
                                                 {report.status}
                                             </span>
                                         </TableCell>

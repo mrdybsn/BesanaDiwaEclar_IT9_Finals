@@ -1,155 +1,119 @@
-import { useState, type FC } from "react";
+import { useCallback, useMemo, useState, type FC } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/Table";
+import LazyTableViewport from "../../../components/Table/LazyTableViewport";
+import { useLazyPaginatedList } from "../../../hooks/useLazyPaginatedList";
+import type { Order } from "../../../interfaces/OrderInterfaces";
+import OrderService from "../../../services/OrderServices";
 
 type FilterType = "today" | "yesterday" | "this_week" | "this_month" | "custom";
-type OrderSource = "online" | "cashier" | "admin";
 
 interface OrderHistoryTabProps {
-    onView: () => void;
+    category?: "walkin" | "delivery" | "recurring";
+    onView: (orderId: number) => void;
+    onViewReceipt?: (orderId: number) => void;
 }
 
-const historyOrders = [
-    {
-        order_id: 6,
-        customer_name: "Dela Cruz, Juan M.",
-        order_type: "walkin",
-        source: "cashier" as OrderSource,
-        product: "500ml bottle x4",
-        total_amount: 40.00,
-        payment_method: "Cash",
-        status: "completed",
-        created_at: "2026-05-16 07:30",
-    },
-    {
-        order_id: 7,
-        customer_name: "Reyes, Carlo B.",
-        order_type: "delivery",
-        source: "online" as OrderSource,
-        product: "5gal Exchange x1",
-        total_amount: 35.00,
-        payment_method: "GCash",
-        status: "completed",
-        created_at: "2026-05-16 07:00",
-    },
-    {
-        order_id: 8,
-        customer_name: "Santos, Maria L.",
-        order_type: "delivery",
-        source: "online" as OrderSource,
-        product: "5gal New Container x2",
-        total_amount: 370.00,
-        payment_method: "Maya",
-        status: "completed",
-        created_at: "2026-05-15 14:00",
-    },
-    {
-        order_id: 9,
-        customer_name: "Walk-in Customer",
-        order_type: "walkin",
-        source: "admin" as OrderSource,
-        product: "1L bottle x5",
-        total_amount: 75.00,
-        payment_method: "Cash",
-        status: "completed",
-        created_at: "2026-05-15 11:20",
-    },
-    {
-        order_id: 10,
-        customer_name: "Garcia, Ana P.",
-        order_type: "delivery",
-        source: "online" as OrderSource,
-        product: "5gal Exchange x2",
-        total_amount: 70.00,
-        payment_method: "GCash",
-        status: "cancelled",
-        created_at: "2026-05-12 09:00",
-    },
-    {
-        order_id: 11,
-        customer_name: "Dela Cruz, Juan M.",
-        order_type: "walkin",
-        source: "cashier" as OrderSource,
-        product: "500ml bottle x2",
-        total_amount: 20.00,
-        payment_method: "Cash",
-        status: "completed",
-        created_at: "2026-04-28 10:15",
-    },
-];
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-    completed: { label: "Completed", className: "bg-green-100 text-green-700" },
-    cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700" },
-};
-
-const sourceConfig: Record<OrderSource, { label: string; className: string }> = {
-    online: { label: "Online", className: "bg-green-100 text-green-700" },
-    cashier: { label: "Cashier", className: "bg-orange-100 text-orange-700" },
-    admin: { label: "Admin POS", className: "bg-purple-100 text-purple-700" },
+const getStatusDisplay = (status: string, orderType?: string) => {
+    if (status === "delivered" && orderType === "walkin") {
+        return { label: "Completed", className: "bg-green-100 text-green-700" };
+    }
+    const map: Record<string, { label: string; className: string }> = {
+        delivered:  { label: "Delivered",  className: "bg-green-100 text-green-700" },
+        cancelled:  { label: "Cancelled",  className: "bg-red-100 text-red-700" },
+    };
+    return map[status] ?? { label: status, className: "bg-gray-100 text-gray-600" };
 };
 
 const orderTypeConfig: Record<string, { label: string; className: string }> = {
-    walkin: { label: "Walk-in", className: "bg-cyan-100 text-cyan-700" },
+    walkin:   { label: "Walk-in",  className: "bg-cyan-100 text-cyan-700" },
     delivery: { label: "Delivery", className: "bg-blue-100 text-blue-700" },
 };
 
 const filterLabels: Record<FilterType, string> = {
-    today: "Today",
-    yesterday: "Yesterday",
-    this_week: "This Week",
+    today:      "Today",
+    yesterday:  "Yesterday",
+    this_week:  "This Week",
     this_month: "This Month",
-    custom: "Custom",
+    custom:     "Custom",
 };
 
-const OrderHistoryTab: FC<OrderHistoryTabProps> = ({ onView }) => {
+const OrderHistoryTab: FC<OrderHistoryTabProps> = ({ category, onView, onViewReceipt }) => {
     const [activeFilter, setActiveFilter] = useState<FilterType>("today");
-    const [sourceFilter, setSourceFilter] = useState<"all" | OrderSource>("all");
     const [customFrom, setCustomFrom] = useState("");
-    const [customTo, setCustomTo] = useState("");
+    const [customTo, setCustomTo]     = useState("");
 
-    const toDateOnly = (dateStr: string) => {
-        const [datePart] = dateStr.split(" ");
-        const [y, m, d] = datePart.split("-").map(Number);
-        return new Date(y, m - 1, d);
-    };
-
-    const getFiltered = () => {
+    const getDateParams = () => {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const fmt = (d: Date) => d.toISOString().split("T")[0];
 
-        return historyOrders.filter((o) => {
-            const date = toDateOnly(o.created_at);
-            let dateMatch = false;
-            switch (activeFilter) {
-                case "today": dateMatch = date.getTime() === today.getTime(); break;
-                case "yesterday": dateMatch = date.getTime() === yesterday.getTime(); break;
-                case "this_week": dateMatch = date >= weekStart && date <= today; break;
-                case "this_month": dateMatch = date >= monthStart && date <= today; break;
-                case "custom":
-                    if (!customFrom || !customTo) { dateMatch = true; break; }
-                    dateMatch = date >= toDateOnly(customFrom) && date <= toDateOnly(customTo);
-                    break;
+        switch (activeFilter) {
+            case "today":
+                return { date_from: fmt(today), date_to: fmt(today) };
+            case "yesterday": {
+                const y = new Date(today);
+                y.setDate(today.getDate() - 1);
+                return { date_from: fmt(y), date_to: fmt(y) };
             }
-            const sourceMatch = sourceFilter === "all" || o.source === sourceFilter;
-            return dateMatch && sourceMatch;
-        });
+            case "this_week": {
+                const start = new Date(today);
+                start.setDate(today.getDate() - today.getDay());
+                return { date_from: fmt(start), date_to: fmt(today) };
+            }
+            case "this_month": {
+                const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                return { date_from: fmt(start), date_to: fmt(today) };
+            }
+            case "custom":
+                return { date_from: customFrom, date_to: customTo };
+        }
     };
 
-    const filtered = getFiltered();
-    const totalRevenue = filtered
-        .filter((o) => o.status === "completed")
-        .reduce((sum, o) => sum + o.total_amount, 0);
-    const onlineRevenue = filtered
-        .filter((o) => o.status === "completed" && o.source === "online")
-        .reduce((sum, o) => sum + o.total_amount, 0);
-    const posRevenue = filtered
-        .filter((o) => o.status === "completed" && (o.source === "cashier" || o.source === "admin"))
-        .reduce((sum, o) => sum + o.total_amount, 0);
+    const dateParams = useMemo(() => getDateParams(), [activeFilter, customFrom, customTo]);
+
+    const fetchPage = useCallback(async (page: number) => {
+        const res = await OrderService.loadOrders({
+            page,
+            category,
+            status: "delivered,cancelled",
+            ...dateParams,
+        });
+        return {
+            data: res.orders.data,
+            current_page: res.orders.current_page,
+            last_page: res.orders.last_page,
+        };
+    }, [category, dateParams]);
+
+    const {
+        items: orders,
+        scrollRef,
+        sentinelRef,
+        viewportRef,
+        initialLoading,
+        loadingMore,
+    } = useLazyPaginatedList<Order>({
+        fetchPage,
+        resetKey: `${category}-${activeFilter}-${customFrom}-${customTo}`,
+    });
+
+    const getProductSummary = (order: Order) => {
+        if (!order.order_items || order.order_items.length === 0) return "—";
+        return order.order_items
+            .map(item => `${item.product?.name ?? "Product"} x${item.quantity}`)
+            .join(", ");
+    };
+
+    const totalRevenue = orders
+        .filter(o => o.status === "delivered")
+        .reduce((sum, o) => sum + Number(o.total_amount), 0);
+
+    const walkinRevenue = orders
+        .filter(o => o.status === "delivered" && o.order_type === "walkin")
+        .reduce((sum, o) => sum + Number(o.total_amount), 0);
+
+    const deliveryRevenue = orders
+        .filter(o => o.status === "delivered" && o.order_type === "delivery")
+        .reduce((sum, o) => sum + Number(o.total_amount), 0);
 
     return (
         <div className="space-y-3">
@@ -158,19 +122,19 @@ const OrderHistoryTab: FC<OrderHistoryTabProps> = ({ onView }) => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-blue-50 rounded-xl border border-blue-100 p-4 text-center">
                     <p className="text-xs text-gray-500">Total Orders</p>
-                    <p className="text-xl font-bold text-blue-600">{filtered.length}</p>
+                    <p className="text-xl font-bold text-blue-600">{orders.length}</p>
                 </div>
                 <div className="bg-green-50 rounded-xl border border-green-100 p-4 text-center">
                     <p className="text-xs text-gray-500">Total Revenue</p>
                     <p className="text-sm font-bold text-green-600">₱ {totalRevenue.toFixed(2)}</p>
                 </div>
-                <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4 text-center">
-                    <p className="text-xs text-gray-500">Online Revenue</p>
-                    <p className="text-sm font-bold text-indigo-600">₱ {onlineRevenue.toFixed(2)}</p>
+                <div className="bg-cyan-50 rounded-xl border border-cyan-100 p-4 text-center">
+                    <p className="text-xs text-gray-500">Walk-in Revenue</p>
+                    <p className="text-sm font-bold text-cyan-600">₱ {walkinRevenue.toFixed(2)}</p>
                 </div>
-                <div className="bg-orange-50 rounded-xl border border-orange-100 p-4 text-center">
-                    <p className="text-xs text-gray-500">POS Revenue</p>
-                    <p className="text-sm font-bold text-orange-600">₱ {posRevenue.toFixed(2)}</p>
+                <div className="bg-purple-50 rounded-xl border border-purple-100 p-4 text-center">
+                    <p className="text-xs text-gray-500">Delivery Revenue</p>
+                    <p className="text-sm font-bold text-purple-600">₱ {deliveryRevenue.toFixed(2)}</p>
                 </div>
             </div>
 
@@ -211,39 +175,26 @@ const OrderHistoryTab: FC<OrderHistoryTabProps> = ({ onView }) => {
                             />
                         </div>
                     )}
-
-                    {/* Source Filter */}
-                    <div className="flex items-center gap-2 ml-4">
-                        <span className="text-xs text-gray-500 font-medium">Source:</span>
-                        {(["all", "online", "cashier", "admin"] as const).map((s) => (
-                            <button
-                                key={s}
-                                type="button"
-                                onClick={() => setSourceFilter(s)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                    sourceFilter === s
-                                        ? "bg-gray-700 text-white"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                }`}
-                            >
-                                {s === "all" ? "All" : s === "admin" ? "Admin POS" : s.charAt(0).toUpperCase() + s.slice(1)}
-                            </button>
-                        ))}
-                    </div>
-
                     <span className="ml-auto text-xs text-gray-400">
-                        {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+                        {orders.length} result{orders.length !== 1 ? "s" : ""}
                     </span>
                 </div>
 
-                <div className="max-w-full overflow-x-auto">
+                <LazyTableViewport
+                    viewportRef={viewportRef}
+                    scrollRef={scrollRef}
+                    sentinelRef={sentinelRef}
+                    initialLoading={initialLoading}
+                    loadingMore={loadingMore}
+                    isEmpty={!initialLoading && orders.length === 0}
+                    emptyMessage="No orders found for this period."
+                >
                     <Table>
                         <TableHeader className="border-b border-gray-200 bg-blue-600 sticky text-white top-0 text-xs">
                             <TableRow>
                                 <TableCell isHeader className="px-5 py-3 font-medium text-center">No.</TableCell>
                                 <TableCell isHeader className="px-5 py-3 font-medium text-start">Customer</TableCell>
                                 <TableCell isHeader className="px-5 py-3 font-medium text-start">Product</TableCell>
-                                <TableCell isHeader className="px-5 py-3 font-medium text-center">Source</TableCell>
                                 <TableCell isHeader className="px-5 py-3 font-medium text-center">Type</TableCell>
                                 <TableCell isHeader className="px-5 py-3 font-medium text-center">Total (₱)</TableCell>
                                 <TableCell isHeader className="px-5 py-3 font-medium text-center">Payment</TableCell>
@@ -253,26 +204,21 @@ const OrderHistoryTab: FC<OrderHistoryTabProps> = ({ onView }) => {
                             </TableRow>
                         </TableHeader>
                         <TableBody className="divide-y divide-gray-100 text-gray-500 text-sm">
-                            {filtered.length === 0 ? (
-                                <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-gray-400" colSpan={10}>
-                                        No orders found for this period.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filtered.map((order, index) => {
-                                    const status = statusConfig[order.status];
-                                    const source = sourceConfig[order.source];
-                                    const type = orderTypeConfig[order.order_type];
+                                {orders.map((order, index) => {
+                                    const status = getStatusDisplay(order.status, order.order_type);
+                                    const type   = orderTypeConfig[order.order_type];
                                     return (
-                                        <TableRow className="hover:bg-gray-50" key={index}>
-                                            <TableCell className="px-4 py-3 text-center">{order.order_id}</TableCell>
-                                            <TableCell className="px-4 py-3 text-start">{order.customer_name}</TableCell>
-                                            <TableCell className="px-4 py-3 text-start">{order.product}</TableCell>
+                                        <TableRow className="hover:bg-gray-50" key={order.order_id}>
                                             <TableCell className="px-4 py-3 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${source.className}`}>
-                                                    {source.label}
-                                                </span>
+                                                {index + 1}
+                                            </TableCell>
+                                            <TableCell className="px-4 py-3 text-start">
+                                                {order.processed_by_user
+                                                    ? `${order.processed_by_user.last_name}, ${order.processed_by_user.first_name}`
+                                                    : "Walk-in"}
+                                            </TableCell>
+                                            <TableCell className="px-4 py-3 text-start max-w-50 truncate">
+                                                {getProductSummary(order)}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-center">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${type.className}`}>
@@ -280,35 +226,56 @@ const OrderHistoryTab: FC<OrderHistoryTabProps> = ({ onView }) => {
                                                 </span>
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-center">
-                                                ₱ {order.total_amount.toFixed(2)}
+                                                ₱ {Number(order.total_amount).toFixed(2)}
                                             </TableCell>
-                                            <TableCell className="px-4 py-3 text-center text-xs">
+                                            <TableCell className="px-4 py-3 text-center text-xs capitalize">
                                                 {order.payment_method}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${status.className}`}>
-                                                    {status.label}
-                                                </span>
+                                                {status ? (
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${status.className}`}>
+                                                        {status.label}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 capitalize">
+                                                        {order.status}
+                                                    </span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-center text-xs">
-                                                {order.created_at}
+                                                {new Date(order.created_at).toLocaleString("en-PH", {
+                                                    month: "short",
+                                                    day:   "numeric",
+                                                    hour:  "2-digit",
+                                                    minute:"2-digit",
+                                                })}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={onView}
-                                                    className="text-blue-600 hover:underline font-medium"
-                                                >
-                                                    View
-                                                </button>
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onView(order.order_id)}
+                                                        className="text-blue-600 hover:underline font-medium"
+                                                    >
+                                                        View
+                                                    </button>
+                                                    {order.status === "delivered" && onViewReceipt && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onViewReceipt(order.order_id)}
+                                                            className="text-green-600 hover:underline text-xs font-medium"
+                                                        >
+                                                            Receipt
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );
-                                })
-                            )}
+                                })}
                         </TableBody>
                     </Table>
-                </div>
+                </LazyTableViewport>
             </div>
         </div>
     );

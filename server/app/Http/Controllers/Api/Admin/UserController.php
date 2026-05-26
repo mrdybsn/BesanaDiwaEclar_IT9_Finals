@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -14,11 +13,16 @@ class UserController extends Controller
     public function loadUsers(Request $request)
     {
         $search = $request->input('search');
+        $role   = $request->input('role');
 
         $users = User::where('is_deleted', false)
             ->orderBy('last_name', 'asc')
             ->orderBy('first_name', 'asc')
             ->orderBy('middle_name', 'asc');
+
+        if ($role) {
+            $users->where('role', $role);
+        }
 
         if ($search) {
             $users->where(function ($query) use ($search) {
@@ -35,7 +39,7 @@ class UserController extends Controller
 
         $users->getCollection()->transform(function ($user) {
             $user->profile_picture = $user->profile_picture
-                ? url('storage/public/img/user/profile_picture/' . $user->profile_picture)
+                ? url('img/user/profile_picture/' . $user->profile_picture)
                 : null;
             return $user;
         });
@@ -66,12 +70,10 @@ class UserController extends Controller
             'middle_name'              => ['nullable', 'max:55'],
             'last_name'                => ['required', 'max:55'],
             'suffix_name'              => ['nullable', 'max:20'],
-            'role'                     => ['required', Rule::in(['admin', 'staff', 'rider', 'customer'])],
+            'role'                     => ['required', Rule::in(['rider'])],
             'birth_date'               => ['required', 'date', 'before:today'],
             'contact_number'           => ['nullable', 'max:20'],
             'address'                  => ['nullable', 'string'],
-            'gps_lat'                  => ['nullable', 'numeric'],
-            'gps_lng'                  => ['nullable', 'numeric'],
             'username'                 => ['required', 'min:6', 'max:55', Rule::unique('tbl_users', 'username')],
             'password'                 => ['required', 'min:6', 'max:20', 'confirmed'],
             'password_confirmation'    => ['required', 'min:6', 'max:20'],
@@ -85,19 +87,19 @@ class UserController extends Controller
 
         $validated = $validator->validated();
 
+        $profilePicture = null;
         if ($request->hasFile('add_user_profile_picture')) {
-            $filenameWithExtensions = $request->file('add_user_profile_picture');
-            $filename               = pathinfo($filenameWithExtensions, PATHINFO_FILENAME);
-            $extension              = $filenameWithExtensions->getClientOriginalExtension();
-            $filenameToStore        = sha1($filename . '_' . time() . '.' . $extension);
-            $filenameWithExtensions->storeAs('public/img/user/profile_picture', $filenameToStore);
-            $validated['add_user_profile_picture'] = $filenameToStore;
+            $file           = $request->file('add_user_profile_picture');
+            $filename       = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension      = $file->getClientOriginalExtension();
+            $profilePicture = sha1($filename . '_' . time()) . '.' . $extension;
+            $file->move(public_path('img/user/profile_picture'), $profilePicture);
         }
 
         $age = date_diff(date_create($validated['birth_date']), date_create('now'))->y;
 
         User::create([
-            'profile_picture' => $validated['add_user_profile_picture'] ?? null,
+            'profile_picture' => $profilePicture,
             'first_name'      => $validated['first_name'],
             'middle_name'     => $validated['middle_name'] ?? null,
             'last_name'       => $validated['last_name'],
@@ -107,8 +109,8 @@ class UserController extends Controller
             'age'             => $age,
             'contact_number'  => $validated['contact_number'] ?? null,
             'address'         => $validated['address'] ?? null,
-            'gps_lat'         => $validated['gps_lat'] ?? null,
-            'gps_lng'         => $validated['gps_lng'] ?? null,
+            'gps_lat'         => null,
+            'gps_lng'         => null,
             'username'        => $validated['username'],
             'password'        => $validated['password'],
         ]);
@@ -126,12 +128,10 @@ class UserController extends Controller
             'middle_name'               => ['nullable', 'max:55'],
             'last_name'                 => ['required', 'max:55'],
             'suffix_name'               => ['nullable', 'max:20'],
-            'role'                      => ['required', Rule::in(['admin', 'staff', 'rider', 'customer'])],
+            'role'                      => ['required', Rule::in(['admin', 'rider'])],
             'birth_date'                => ['required', 'date', 'before:today'],
             'contact_number'            => ['nullable', 'max:20'],
             'address'                   => ['nullable', 'string'],
-            'gps_lat'                   => ['nullable', 'numeric'],
-            'gps_lng'                   => ['nullable', 'numeric'],
             'username'                  => [
                 'required', 'min:6', 'max:55',
                 Rule::unique('tbl_users', 'username')->ignore($user),
@@ -147,27 +147,28 @@ class UserController extends Controller
         $validated = $validator->validated();
 
         if ($request->has('remove_profile_picture') && $request->remove_profile_picture == '1') {
-            if ($user->profile_picture && Storage::exists('public/img/user/profile_picture/' . $user->profile_picture)) {
-                Storage::delete('public/img/user/profile_picture/' . $user->profile_picture);
+            if ($user->profile_picture) {
+                $oldPath = public_path('img/user/profile_picture/' . $user->profile_picture);
+                if (file_exists($oldPath)) unlink($oldPath);
             }
             $user->profile_picture = null;
         } elseif ($request->hasFile('edit_user_profile_picture')) {
-            if ($user->profile_picture && Storage::exists('public/img/user/profile_picture/' . $user->profile_picture)) {
-                Storage::delete('public/img/user/profile_picture/' . $user->profile_picture);
+            if ($user->profile_picture) {
+                $oldPath = public_path('img/user/profile_picture/' . $user->profile_picture);
+                if (file_exists($oldPath)) unlink($oldPath);
             }
-
-            $filenameWithExtensions = $request->file('edit_user_profile_picture');
-            $filename               = pathinfo($filenameWithExtensions, PATHINFO_FILENAME);
-            $extension              = $filenameWithExtensions->getClientOriginalExtension();
-            $filenameToStore        = sha1($filename . '_' . time() . '.' . $extension);
-            $filenameWithExtensions->storeAs('public/img/user/profile_picture', $filenameToStore);
-            $validated['edit_user_profile_picture'] = $filenameToStore;
+            $file           = $request->file('edit_user_profile_picture');
+            $filename       = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension      = $file->getClientOriginalExtension();
+            $filenameToStore = sha1($filename . '_' . time()) . '.' . $extension;
+            $file->move(public_path('img/user/profile_picture'), $filenameToStore);
+            $user->profile_picture = $filenameToStore;
         }
 
         $age = date_diff(date_create($validated['birth_date']), date_create('now'))->y;
 
         $user->update([
-            'profile_picture' => $validated['edit_user_profile_picture'] ?? $user->profile_picture,
+            'profile_picture' => $user->profile_picture,
             'first_name'      => $validated['first_name'],
             'middle_name'     => $validated['middle_name'] ?? null,
             'last_name'       => $validated['last_name'],
@@ -177,13 +178,13 @@ class UserController extends Controller
             'age'             => $age,
             'contact_number'  => $validated['contact_number'] ?? null,
             'address'         => $validated['address'] ?? null,
-            'gps_lat'         => $validated['gps_lat'] ?? null,
-            'gps_lng'         => $validated['gps_lng'] ?? null,
             'username'        => $validated['username'],
         ]);
 
+        $user->refresh();
+
         $user->profile_picture = $user->profile_picture
-            ? url('storage/public/img/user/profile_picture/' . $user->profile_picture)
+            ? url('img/user/profile_picture/' . $user->profile_picture)
             : null;
 
         return response()->json([

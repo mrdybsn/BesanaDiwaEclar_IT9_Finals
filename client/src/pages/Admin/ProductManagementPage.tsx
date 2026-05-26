@@ -8,6 +8,7 @@ import type { ProductColumns } from "../../interfaces/ProductInterfaces";
 import { useToastMessage } from "../../hooks/useToastMessage";
 import ToastMessage from "../../components/ToastMessage/ToastMessage";
 import { useRefresh } from "../../hooks/useRefresh";
+import PageHeader from "../../components/Layout/PageHeader";
 
 const ProductManagementPage = () => {
     const {
@@ -46,6 +47,10 @@ const ProductManagementPage = () => {
 
     return (
         <>
+            <PageHeader
+                title="Products"
+                description="Manage your product catalog and pricing."
+            />
             <ToastMessage
                 message={toastMessage}
                 isFailed={toastIsFailed}

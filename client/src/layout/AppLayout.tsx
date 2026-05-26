@@ -10,11 +10,12 @@ const AppLayout = () => {
         <NotificationProvider>
             <SidebarProvider>
                 <HeaderProvider>
-                    <div className="min-h-screen bg-gray-50">
+                    <div className="min-h-screen" style={{ backgroundColor: "#EEF6FC" }}>
                         <AppHeader />
                         <AppSidebar />
-                        <main className="p-4 sm:ml-64 mt-14">
-                            <div className="p-4">
+                        {/* sm:ml-60 matches the sidebar width (w-60 = 15rem) */}
+                        <main className="sm:ml-60 mt-14 min-h-screen">
+                            <div className="p-5">
                                 <Outlet />
                             </div>
                         </main>

@@ -1,19 +1,11 @@
 import { useEffect, useState, type FC, type FormEvent } from "react";
 import Modal from "../../../components/Modal";
 import FloatingLabelInput from "../../../components/Input/FloatingLabelInput";
-import FloatingLabelSelect from "../../../components/Select/FloatingLabelSelect";
 import CloseButton from "../../../components/Button/CloseButton";
 import SubmitButton from "../../../components/Button/SubmitButton";
 import UploadInput from "../../../components/Input/UploadInput";
 import UserService from "../../../services/UserService";
 import type { UserColumns, UserFieldErrors } from "../../../interfaces/UserInterfaces";
-
-const ROLES = [
-    { value: "admin", label: "Admin" },
-    { value: "staff", label: "Staff" },
-    { value: "rider", label: "Rider" },
-    { value: "customer", label: "Customer" },
-];
 
 interface EditUserFormModalProps {
     isOpen: boolean;
@@ -39,7 +31,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({
     const [middleName, setMiddleName] = useState("");
     const [lastName, setLastName] = useState("");
     const [suffixName, setSuffixName] = useState("");
-    const [role, setRole] = useState("");
     const [birthDate, setBirthDate] = useState("");
     const [contactNumber, setContactNumber] = useState("");
     const [username, setUsername] = useState("");
@@ -53,7 +44,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({
             setMiddleName(user.middle_name ?? "");
             setLastName(user.last_name ?? "");
             setSuffixName(user.suffix_name ?? "");
-            setRole(user.role ?? "");
             setBirthDate(user.birth_date ?? "");
             setContactNumber(user.contact_number ?? "");
             setUsername(user.username ?? "");
@@ -80,7 +70,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({
         formData.append("middle_name", middleName || "");
         formData.append("last_name", lastName);
         formData.append("suffix_name", suffixName || "");
-        formData.append("role", role);
+        formData.append("role", "rider");
         formData.append("birth_date", birthDate);
         formData.append("contact_number", contactNumber || "");
         formData.append("username", username);
@@ -111,7 +101,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({
         <Modal isOpen={isOpen} onClose={handleClose} showCloseButton>
             <form onSubmit={handleUpdateUser} className="bg-white p-4 rounded-lg">
                 <h1 className="text-2xl border-b border-gray-100 p-4 font-semibold mb-4">
-                    Edit User Form
+                    Edit Rider
                 </h1>
 
                 <div className="mb-4">
@@ -175,23 +165,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({
                                 onChange={(e) => setSuffixName(e.target.value)}
                                 errors={errors.suffix_name}
                             />
-                        </div>
-                        <div className="mb-4">
-                            <FloatingLabelSelect
-                                label="Role"
-                                name="role"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                required
-                                errors={errors.role}
-                            >
-                                <option value="">Select Role</option>
-                                {ROLES.map((r) => (
-                                    <option value={r.value} key={r.value}>
-                                        {r.label}
-                                    </option>
-                                ))}
-                            </FloatingLabelSelect>
                         </div>
                     </div>
                     <div className="col-span-2 md:col-span-1">

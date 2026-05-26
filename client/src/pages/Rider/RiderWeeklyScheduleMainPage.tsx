@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import WeeklyScheduleList from "./components/WeeklyScheduleList";
 import ScheduleDeliveryDetailModal from "./components/ScheduleDeliveryDetailModal";
+import PageHeader from "../../components/Layout/PageHeader";
 
 export interface RecurringDelivery {
     recurring_id: number;
@@ -40,18 +41,11 @@ const RiderWeeklyScheduleMainPage = () => {
 
     return (
         <>
-            {/* Page Header */}
-            <div className="mb-6">
-                <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">
-                    Rider
-                </p>
-                <h1 className="text-2xl font-bold text-gray-800">
-                    Weekly Schedule
-                </h1>
-                <p className="text-sm text-gray-400 mt-1">
-                    Auto-populated from recurring standing orders
-                </p>
-            </div>
+            <PageHeader
+                portal="rider"
+                title="Weekly Schedule"
+                description="Your assigned deliveries for the week."
+            />
 
             <WeeklyScheduleList onView={handleView} />
 

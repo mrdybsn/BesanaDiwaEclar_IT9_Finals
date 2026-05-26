@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
 import type { DeliveryTask } from "../RiderTasksMainPage";
+import RiderDeliveryActions from "./RiderDeliveryActions";
 
 interface DeliveryCardProps {
     delivery: DeliveryTask;
     onView: (delivery: DeliveryTask) => void;
+    onUpdated?: () => void;
 }
 
 const statusConfig = {
@@ -11,6 +12,11 @@ const statusConfig = {
         label: "Pending",
         className: "bg-yellow-100 text-yellow-700",
         dot: "bg-yellow-500",
+    },
+    assigned: {
+        label: "Assigned",
+        className: "bg-indigo-100 text-indigo-700",
+        dot: "bg-indigo-500",
     },
     in_transit: {
         label: "In Transit",
@@ -29,45 +35,46 @@ const paymentStatusConfig = {
     paid: { label: "Paid", className: "bg-green-100 text-green-600" },
 };
 
-const DeliveryCard = ({ delivery, onView }: DeliveryCardProps) => {
+const DeliveryCard = ({ delivery, onView, onUpdated }: DeliveryCardProps) => {
     const status = statusConfig[delivery.status];
     const paymentStatus = paymentStatusConfig[delivery.payment_status];
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-5">
             <div className="flex items-start justify-between gap-4">
-
-                {/* Left — Customer Info */}
                 <div className="flex-1 min-w-0">
-                    {/* Status + Payment */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.className}`}>
+                        <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.className}`}
+                        >
                             <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                             {status.label}
                         </span>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${paymentStatus.className}`}>
+                        <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-semibold ${paymentStatus.className}`}
+                        >
                             {paymentStatus.label}
                         </span>
+                        {delivery.is_recurring && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                                Weekly
+                            </span>
+                        )}
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 capitalize">
                             {delivery.payment_method}
                         </span>
                     </div>
 
-                    {/* Customer Name */}
-                    <p className="text-base font-bold text-gray-800 truncate">
-                        {delivery.customer_name}
-                    </p>
-                    <p className="text-sm text-gray-400 mt-0.5">
-                        📞 {delivery.contact_number}
-                    </p>
+                    <p className="text-xs text-gray-400 mb-0.5">Scheduled: {delivery.scheduled_date}</p>
 
-                    {/* Address */}
+                    <p className="text-base font-bold text-gray-800 truncate">{delivery.customer_name}</p>
+                    <p className="text-sm text-gray-400 mt-0.5">📞 {delivery.contact_number}</p>
+
                     <p className="text-sm text-gray-500 mt-1.5 flex items-start gap-1.5">
                         <span className="mt-0.5 shrink-0">📍</span>
                         <span>{delivery.delivery_address}</span>
                     </p>
 
-                    {/* Order Items */}
                     <div className="mt-2 space-y-0.5">
                         {delivery.order_items.map((item, index) => (
                             <p key={index} className="text-xs text-gray-400">
@@ -76,7 +83,6 @@ const DeliveryCard = ({ delivery, onView }: DeliveryCardProps) => {
                         ))}
                     </div>
 
-                    {/* Notes */}
                     {delivery.notes && (
                         <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-1.5 mt-2">
                             📝 {delivery.notes}
@@ -84,7 +90,6 @@ const DeliveryCard = ({ delivery, onView }: DeliveryCardProps) => {
                     )}
                 </div>
 
-                {/* Right — Total */}
                 <div className="shrink-0 text-right">
                     <p className="text-xs text-gray-400">Total</p>
                     <p className="text-lg font-extrabold text-gray-900">
@@ -93,42 +98,12 @@ const DeliveryCard = ({ delivery, onView }: DeliveryCardProps) => {
                 </div>
             </div>
 
-            {/* Action Buttons */}
-            {delivery.status !== "delivered" && (
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        onClick={() => onView(delivery)}
-                        className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg cursor-pointer transition-colors"
-                    >
-                        View Details
-                    </button>
-                    <Link
-                        to="/rider/map"
-                        className="flex-1 text-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium rounded-lg cursor-pointer transition-colors"
-                    >
-                        🗺 Navigate
-                    </Link>
-                    <Link
-                        to="/rider/collection"
-                        className="flex-1 text-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors"
-                    >
-                        Collect
-                    </Link>
-                </div>
-            )}
-
-            {delivery.status === "delivered" && (
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        onClick={() => onView(delivery)}
-                        className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg cursor-pointer transition-colors"
-                    >
-                        View Details
-                    </button>
-                </div>
-            )}
+            <RiderDeliveryActions
+                delivery={delivery}
+                onView={onView}
+                onUpdated={onUpdated}
+                layout="card"
+            />
         </div>
     );
 };

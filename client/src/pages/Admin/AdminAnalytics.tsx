@@ -92,7 +92,12 @@ const AdminAnalytics = () => {
 
             {/* Header */}
             <div>
-                <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">Admin</p>
+                <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold tracking-widest text-gray-400 uppercase">Admin</span>
+                        <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
+                            🛡 Administrator
+                        </span>
+                    </div>
                 <h1 className="text-2xl font-bold text-gray-800">Analytics</h1>
                 <p className="text-sm text-gray-400 mt-0.5">6-month performance overview · Soldier's Thirst</p>
             </div>

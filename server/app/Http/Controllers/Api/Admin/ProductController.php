@@ -7,7 +7,6 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -31,7 +30,7 @@ class ProductController extends Controller
 
         $products->getCollection()->transform(function ($product) {
             $product->image = $product->image
-                ? url('storage/public/img/product/' . $product->image)
+                ? url('img/product/' . $product->image)
                 : null;
             return $product;
         });
@@ -44,7 +43,7 @@ class ProductController extends Controller
     public function getProduct(Product $product)
     {
         $product->image = $product->image
-            ? url('storage/public/img/product/' . $product->image)
+            ? url('img/product/' . $product->image)
             : null;
 
         return response()->json([
@@ -78,11 +77,16 @@ class ProductController extends Controller
 
         $imageFilename = null;
         if ($request->hasFile('image')) {
-            $file           = $request->file('image');
-            $filename       = pathinfo($file, PATHINFO_FILENAME);
-            $extension      = $file->getClientOriginalExtension();
-            $imageFilename  = sha1($filename . '_' . time() . '.' . $extension);
-            $file->storeAs('public/img/product', $imageFilename);
+            $file          = $request->file('image');
+            $filename      = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension     = $file->getClientOriginalExtension();
+            $imageFilename = sha1($filename . '_' . time()) . '.' . $extension;
+
+            $uploadPath = public_path('img/product');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            copy($file->getRealPath(), $uploadPath . DIRECTORY_SEPARATOR . $imageFilename);
         }
 
         Product::create([
@@ -128,22 +132,27 @@ class ProductController extends Controller
 
         $validated = $validator->validated();
 
-        // Handle image removal
         if ($request->has('remove_image') && $request->remove_image == '1') {
-            if ($product->image && Storage::exists('public/img/product/' . $product->image)) {
-                Storage::delete('public/img/product/' . $product->image);
+            if ($product->image) {
+                $oldPath = public_path('img/product/' . $product->image);
+                if (file_exists($oldPath)) unlink($oldPath);
             }
             $product->image = null;
         } elseif ($request->hasFile('image')) {
-            // Delete old image first
-            if ($product->image && Storage::exists('public/img/product/' . $product->image)) {
-                Storage::delete('public/img/product/' . $product->image);
+            if ($product->image) {
+                $oldPath = public_path('img/product/' . $product->image);
+                if (file_exists($oldPath)) unlink($oldPath);
             }
             $file          = $request->file('image');
-            $filename      = pathinfo($file, PATHINFO_FILENAME);
+            $filename      = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             $extension     = $file->getClientOriginalExtension();
-            $imageFilename = sha1($filename . '_' . time() . '.' . $extension);
-            $file->storeAs('public/img/product', $imageFilename);
+            $imageFilename = sha1($filename . '_' . time()) . '.' . $extension;
+
+            $uploadPath = public_path('img/product');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            copy($file->getRealPath(), $uploadPath . DIRECTORY_SEPARATOR . $imageFilename);
             $product->image = $imageFilename;
         }
 
@@ -161,8 +170,10 @@ class ProductController extends Controller
             'is_available'        => $validated['is_available'] ?? $product->is_available,
         ]);
 
+        $product->refresh();
+
         $product->image = $product->image
-            ? url('storage/public/img/product/' . $product->image)
+            ? url('img/product/' . $product->image)
             : null;
 
         return response()->json([
@@ -185,8 +196,9 @@ class ProductController extends Controller
 
     public function destroyProduct(Product $product)
     {
-        if ($product->image && Storage::exists('public/img/product/' . $product->image)) {
-            Storage::delete('public/img/product/' . $product->image);
+        if ($product->image) {
+            $oldPath = public_path('img/product/' . $product->image);
+            if (file_exists($oldPath)) unlink($oldPath);
         }
 
         $product->update([

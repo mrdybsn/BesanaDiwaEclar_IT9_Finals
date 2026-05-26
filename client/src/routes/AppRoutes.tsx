@@ -1,92 +1,64 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "../layout/AppLayout";
 import UserMainPage from "../pages/Admin/UserManagementPage";
 import ProductMainPage from "../pages/Admin/ProductManagementPage";
 import CustomerMainPage from "../pages/Admin/CustomerManagementPage";
 import InventoryMainPage from "../pages/Admin/InventoryManagementPage";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
-import AdminAnalytics from "../pages/Admin/AdminAnalytics";
+import AdminReportsPage from "../pages/Admin/AdminReportsPage";
 import GallonDebtsMainPage from "../pages/Admin/GallonDebtsMainPage";
 import DeliveryMainPage from "../pages/Admin/DeliveryMainPage";
 import RemittancesMainPage from "../pages/Admin/RemittancesMainPage";
-import POSMainPage from "../pages/Cashier/POSMainPage";
-import CashierCustomersMainPage from "../pages/Cashier/CashierCustomersMainPage";
-import CashiersOrdersMainPage from "../pages/Cashier/CashiersOrdersMainPage";
-import RecurringOrdersMainPage from "../pages/Cashier/RecurringOrdersMainPage";
-import CashierDeliveriesMainPage from "../pages/Cashier/CashierDeliveriesMainPage";
-import CashierRemittancesMainPage from "../pages/Cashier/CashierRemittancesMainPage";
-import CashierInventoryPage from "../pages/Cashier/CashierInventoryPage";
 import RiderTasksMainPage from "../pages/Rider/RiderTasksMainPage";
 import RiderMapMainPage from "../pages/Rider/RiderMapMainPage";
 import RiderCollectionMainPage from "../pages/Rider/RiderCollectionMainPage";
 import RiderLostItemMainPage from "../pages/Rider/RiderLostItemMainPage";
-import RiderWeeklyScheduleMainPage from "../pages/Rider/RiderWeeklyScheduleMainPage";
-import ShopMainPage from "../pages/Customer/ShopMainPage";
-import OrderFormMainPage from "../pages/Customer/OrderFormMainPage";
-import OrderHistoryMainPage from "../pages/Customer/OrderHistoryMainPage";
-import ProfileMainPage from "../pages/Customer/ProfileMainPage";
-import JugStatusMainPage from "../pages/Customer/JugStatusMainPage";
-import OrderTrackingMainPage from "../pages/Customer/OrderTrackingMainPage";
 import AdminNotificationsMainPage from "../pages/Admin/AdminNotificationsMainPage";
-import CashierNotificationsMainPage from "../pages/Cashier/CashierNotificationsMainPage";
-import RiderNotificationsMainPage from "../pages/Rider/RiderNotificationsMainPage";
-import CustomerNotificationsMainPage from "../pages/Customer/CustomerNotificationsMainPage";
 import AdminPOSPage from "../pages/Admin/AdminPOSPage";
 import AdminOrdersMainPage from "../pages/Admin/AdminOrdersMainPage";
-import AdminRecurringMainPage from "../pages/Admin/AdminRecurringMainPage";
-import CustomerFeedbackPage from "../pages/Customer/CustomerFeedbackPage";
-
+import RiderWeeklyScheduleMainPage from "../pages/Rider/RiderWeeklyScheduleMainPage";
+import LoginPage from "../pages/Auth/LoginPage";
+import ProtectedRoute from "./ProtectedRoute";
+import GuestRoute from "./GuestRoute";
 
 const AppRoutes = () => {
   return (
-    <>
-        <Routes>
-            <Route element={<AppLayout />}>
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/analytics" element={<AdminAnalytics />} />
-                <Route path="/admin/pos" element={<AdminPOSPage />} />
-                <Route path="/admin/orders" element={<AdminOrdersMainPage />} />
-                <Route path="/admin/recurring" element={<AdminRecurringMainPage />} />
-                <Route path="/admin/users" element={<UserMainPage />} />
-                <Route path="/admin/products" element={<ProductMainPage />} />
-                <Route path="/admin/customers" element={<CustomerMainPage />} />
-                <Route path="/admin/inventory" element={<InventoryMainPage />} />
-                <Route path="/admin/gallon-debts" element={<GallonDebtsMainPage />} />
-                <Route path="/admin/deliveries" element={<DeliveryMainPage />} />
-                <Route path="/admin/remittances" element={<RemittancesMainPage />} />
-                <Route path="/admin/notifications"  element={<AdminNotificationsMainPage />} />
+    <Routes>
+      <Route element={<GuestRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
 
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/reports" element={<AdminReportsPage />} />
+          <Route path="/admin/analytics" element={<AdminDashboard />} />
+          <Route path="/admin/pos" element={<AdminPOSPage />} />
+          <Route path="/admin/orders" element={<AdminOrdersMainPage />} />
+          <Route path="/admin/recurring" element={<Navigate to="/admin/orders?tab=recurring" replace />} />
+          <Route path="/admin/users" element={<UserMainPage />} />
+          <Route path="/admin/products" element={<ProductMainPage />} />
+          <Route path="/admin/customers" element={<CustomerMainPage />} />
+          <Route path="/admin/inventory" element={<InventoryMainPage />} />
+          <Route path="/admin/gallon-debts" element={<GallonDebtsMainPage />} />
+          <Route path="/admin/deliveries" element={<DeliveryMainPage />} />
+          <Route path="/admin/remittances" element={<RemittancesMainPage />} />
+          <Route path="/admin/notifications" element={<AdminNotificationsMainPage />} />
 
-                <Route path="/cashier/pos" element={<POSMainPage />} />
-                <Route path="/cashier/customers" element={<CashierCustomersMainPage />} />
-                <Route path="/cashier/orders" element={<CashiersOrdersMainPage />} />
-                <Route path="/cashier/recurring" element={<RecurringOrdersMainPage />} />
-                <Route path="/cashier/deliveries" element={<CashierDeliveriesMainPage />} />
-                <Route path="/cashier/remittances" element={<CashierRemittancesMainPage />} />
-                <Route path="/cashier/inventory" element={<CashierInventoryPage />} />
-                <Route path="/cashier/notifications"  element={<CashierNotificationsMainPage />} />
+          <Route path="/rider/tasks" element={<RiderTasksMainPage />} />
+          <Route path="/rider/map" element={<RiderMapMainPage />} />
+          <Route path="/rider/collection" element={<RiderCollectionMainPage />} />
+          <Route path="/rider/lost-items" element={<RiderLostItemMainPage />} />
+          <Route path="/rider/schedule" element={<RiderWeeklyScheduleMainPage />} />
+          <Route path="/rider/notifications" element={<Navigate to="/rider/tasks" replace />} />
+        </Route>
+      </Route>
 
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/logout" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+};
 
-                <Route path="/rider/tasks" element={<RiderTasksMainPage />} />
-                <Route path="/rider/map" element={<RiderMapMainPage />} />
-                <Route path="/rider/collection" element={<RiderCollectionMainPage />} />
-                <Route path="/rider/lost-items" element={<RiderLostItemMainPage />} />
-                <Route path="/rider/schedule" element={<RiderWeeklyScheduleMainPage />} />
-                <Route path="/rider/notifications"  element={<RiderNotificationsMainPage />} />
-
-                <Route path="/shop" element={<ShopMainPage />} />
-                <Route path="/shop/order-form" element={<OrderFormMainPage />} />
-                <Route path="/shop/history" element={<OrderHistoryMainPage />} />
-                <Route path="/shop/track/:id" element={<OrderTrackingMainPage />} />
-                <Route path="/shop/jug-status"  element={<JugStatusMainPage />} />
-                <Route path="/profile"          element={<ProfileMainPage />} />
-                <Route path="/notifications"        element={<CustomerNotificationsMainPage />} />
-                <Route path="/feedback"        element={<CustomerFeedbackPage />} />
-
-            </Route>
-        </Routes>
-    </>
-  )
-}
-
-export default AppRoutes
+export default AppRoutes;

@@ -1,19 +1,11 @@
 import { useState, type FC, type FormEvent } from "react";
 import Modal from "../../../components/Modal";
 import FloatingLabelInput from "../../../components/Input/FloatingLabelInput";
-import FloatingLabelSelect from "../../../components/Select/FloatingLabelSelect";
 import CloseButton from "../../../components/Button/CloseButton";
 import SubmitButton from "../../../components/Button/SubmitButton";
 import UploadInput from "../../../components/Input/UploadInput";
 import UserService from "../../../services/UserService";
 import type { UserFieldErrors } from "../../../interfaces/UserInterfaces";
-
-const ROLES = [
-    { value: "admin", label: "Admin" },
-    { value: "staff", label: "Staff" },
-    { value: "rider", label: "Rider" },
-    { value: "customer", label: "Customer" },
-];
 
 interface AddUserFormModalProps {
     isOpen: boolean;
@@ -36,7 +28,7 @@ const AddUserFormModal: FC<AddUserFormModalProps> = ({
     const [middleName, setMiddleName] = useState("");
     const [lastName, setLastName] = useState("");
     const [suffixName, setSuffixName] = useState("");
-    const [role, setRole] = useState("");
+    const [role, setRole] = useState("rider");
     const [birthDate, setBirthDate] = useState("");
     const [contactNumber, setContactNumber] = useState("");
     const [username, setUsername] = useState("");
@@ -49,7 +41,7 @@ const AddUserFormModal: FC<AddUserFormModalProps> = ({
         setMiddleName("");
         setLastName("");
         setSuffixName("");
-        setRole("");
+        setRole("rider");
         setBirthDate("");
         setContactNumber("");
         setUsername("");
@@ -106,7 +98,7 @@ const AddUserFormModal: FC<AddUserFormModalProps> = ({
         <Modal isOpen={isOpen} onClose={handleClose} showCloseButton>
             <form onSubmit={handleStoreUser} className="bg-white p-4 rounded-lg">
                 <h1 className="text-2xl border-b border-gray-100 p-4 font-semibold mb-4">
-                    Add User Form
+                    Add Rider
                 </h1>
 
                 <div className="mb-4">
@@ -163,23 +155,7 @@ const AddUserFormModal: FC<AddUserFormModalProps> = ({
                                 errors={errors.suffix_name}
                             />
                         </div>
-                        <div className="mb-4">
-                            <FloatingLabelSelect
-                                label="Role"
-                                name="role"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                required
-                                errors={errors.role}
-                            >
-                                <option value="">Select Role</option>
-                                {ROLES.map((r) => (
-                                    <option value={r.value} key={r.value}>
-                                        {r.label}
-                                    </option>
-                                ))}
-                            </FloatingLabelSelect>
-                        </div>
+                        <input type="hidden" name="role" value="rider" />
                     </div>
                     <div className="col-span-2 md:col-span-1">
                         <div className="mb-4">
@@ -244,9 +220,9 @@ const AddUserFormModal: FC<AddUserFormModalProps> = ({
                         <CloseButton label="Close" onClose={handleClose} />
                     )}
                     <SubmitButton
-                        label="Save User"
+                        label="Save Rider"
                         loading={loadingStore}
-                        loadingLabel="Saving User..."
+                        loadingLabel="Saving Rider..."
                     />
                 </div>
             </form>

@@ -89,7 +89,6 @@ const EditProductFormModal: FC<EditProductFormModalProps> = ({
         Object.entries(form).forEach(([key, value]) => {
             if (value !== "") formData.append(key, value);
         });
-        formData.append("_method", "PUT");
 
         try {
             const res = await ProductService.updateProduct(product.product_id, formData);
@@ -109,6 +108,7 @@ const EditProductFormModal: FC<EditProductFormModalProps> = ({
             setLoadingUpdate(false);
         }
     };
+    
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} showCloseButton>

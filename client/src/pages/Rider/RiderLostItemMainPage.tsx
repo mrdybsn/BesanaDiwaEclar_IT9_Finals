@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import LostItemList from "./components/LostItemList";
 import ReportLostItemModal from "./components/ReportLostItemModal";
+import PageHeader from "../../components/Layout/PageHeader";
 
 export interface LostItemReport {
     report_id: number;
@@ -16,6 +17,7 @@ export interface LostItemReport {
 
 const RiderLostItemMainPage = () => {
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
         document.title = "Lost Item Report";
@@ -23,19 +25,11 @@ const RiderLostItemMainPage = () => {
 
     return (
         <>
-            {/* Page Header */}
-            <div className="mb-6 flex items-start justify-between">
-                <div>
-                    <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">
-                        Rider
-                    </p>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Lost Item Report
-                    </h1>
-                    <p className="text-sm text-gray-400 mt-1">
-                        Report damaged or missing jugs during delivery.
-                    </p>
-                </div>
+            <PageHeader
+                portal="rider"
+                title="Lost Item Report"
+                description="Report damaged or missing jugs during delivery."
+            >
                 <button
                     type="button"
                     onClick={() => setIsReportOpen(true)}
@@ -43,13 +37,14 @@ const RiderLostItemMainPage = () => {
                 >
                     + New Report
                 </button>
-            </div>
+            </PageHeader>
 
-            <LostItemList />
+            <LostItemList refreshKey={refreshKey} />
 
             <ReportLostItemModal
                 isOpen={isReportOpen}
                 onClose={() => setIsReportOpen(false)}
+                onSuccess={() => setRefreshKey((k) => k + 1)}
             />
         </>
     );

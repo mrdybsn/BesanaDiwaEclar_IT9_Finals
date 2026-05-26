@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/Table";
+import LazyTableViewport from "../../../components/Table/LazyTableViewport";
+import { useLazyPaginatedList } from "../../../hooks/useLazyPaginatedList";
 import type { ProductColumns } from "../../../interfaces/ProductInterfaces";
 import ProductService from "../../../services/ProductService";
 
@@ -18,39 +20,34 @@ const ProductList = ({
     onAvailabilityToggled,
     refreshKey,
 }: ProductListProps) => {
-    const [products, setProducts] = useState<ProductColumns[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [lastPage, setLastPage] = useState(1);
 
-    // Debounce live search
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(searchInput);
-            setCurrentPage(1);
-        }, 400);
+        const timer = setTimeout(() => setDebouncedSearch(searchInput), 400);
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    const fetchProducts = async (page: number, searchTerm: string) => {
-        setIsLoading(true);
-        try {
-            const response = await ProductService.loadProducts(page, searchTerm);
-            setProducts(response.data.products.data);
-            setCurrentPage(response.data.products.current_page);
-            setLastPage(response.data.products.last_page);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const fetchPage = useCallback(async (page: number) => {
+        const response = await ProductService.loadProducts(page, debouncedSearch);
+        const p = response.data.products;
+        return { data: p.data, current_page: p.current_page, last_page: p.last_page };
+    }, [debouncedSearch]);
 
-    useEffect(() => {
-        fetchProducts(currentPage, debouncedSearch);
-    }, [currentPage, debouncedSearch, refreshKey]);
+    const {
+        items: products,
+        scrollRef,
+        sentinelRef,
+        viewportRef,
+        initialLoading,
+        loadingMore,
+        reload,
+    } = useLazyPaginatedList<ProductColumns>({
+        fetchPage,
+        resetKey: `${debouncedSearch}-${refreshKey}`,
+    });
+
+    const isLoading = initialLoading || loadingMore;
 
     const handleToggleAvailability = async (product: ProductColumns) => {
         try {
@@ -59,7 +56,7 @@ const ProductList = ({
             onAvailabilityToggled(
                 `${product.name} (${product.size}) is now ${newStatus ? "Available" : "Unavailable"}.`
             );
-            fetchProducts(currentPage, debouncedSearch);
+            reload();
         } catch (error) {
             onAvailabilityToggled("Failed to update product availability.", true);
         }
@@ -93,11 +90,20 @@ const ProductList = ({
                 </button>
             </div>
 
-            <div className="max-w-full overflow-x-auto">
+            <LazyTableViewport
+                viewportRef={viewportRef}
+                scrollRef={scrollRef}
+                sentinelRef={sentinelRef}
+                initialLoading={initialLoading}
+                loadingMore={loadingMore}
+                isEmpty={!initialLoading && products.length === 0}
+                emptyMessage="No products found."
+            >
                 <Table>
                     <TableHeader className="border-b border-gray-200 bg-blue-600 sticky text-white top-0 text-xs">
                         <TableRow>
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">No.</TableCell>
+                            <TableCell isHeader className="px-5 py-3 font-medium text-center">Image</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-start">Product Name</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">Size</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">Unit</TableCell>
@@ -110,29 +116,21 @@ const ProductList = ({
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 text-gray-500 text-sm">
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell className="py-10 text-center" colSpan={10}>
-                                    <div className="flex justify-center items-center gap-2 text-blue-600">
-                                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                        </svg>
-                                        <span>Loading products...</span>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : products.length === 0 ? (
-                            <TableRow>
-                                <TableCell className="py-10 text-center text-gray-400" colSpan={10}>
-                                    No products found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            products.map((product, index) => (
+                        {products.map((product, index) => (
                                 <TableRow className="hover:bg-gray-50" key={product.product_id}>
                                     <TableCell className="px-4 py-3 text-center">
-                                        {(currentPage - 1) * 15 + index + 1}
+                                        {index + 1}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-center">
+                                        <img
+                                            src={product.image ?? `https://ui-avatars.com/api/?background=DBEAFE&color=1D4ED8&name=${encodeURIComponent(product.name)}`}
+                                            alt={product.name}
+                                            className="w-10 h-10 rounded-lg object-cover mx-auto"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src =
+                                                    `https://ui-avatars.com/api/?background=DBEAFE&color=1D4ED8&name=${encodeURIComponent(product.name)}`;
+                                            }}
+                                        />
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-start">{product.name}</TableCell>
                                     <TableCell className="px-4 py-3 text-center">{product.size}</TableCell>
@@ -190,36 +188,10 @@ const ProductList = ({
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
+                            ))}
                     </TableBody>
                 </Table>
-            </div>
-
-            {/* Pagination */}
-            {!isLoading && lastPage > 1 && (
-                <div className="flex justify-center items-center gap-2 py-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
-                        className="px-3 py-1 text-sm rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100"
-                    >
-                        Prev
-                    </button>
-                    <span className="text-sm text-gray-600">
-                        Page {currentPage} of {lastPage}
-                    </span>
-                    <button
-                        type="button"
-                        disabled={currentPage === lastPage}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                        className="px-3 py-1 text-sm rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100"
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
+            </LazyTableViewport>
         </div>
     );
 };

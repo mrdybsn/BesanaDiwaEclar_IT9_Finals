@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import CollectionList from "./components/CollectionList";
 import CollectionFormModal from "./components/CollectionFormModal";
-import ConfirmCollectionModal from "./components/ConfirmCollectionModal";
+import PageHeader from "../../components/Layout/PageHeader";
+import RiderDeliveryService from "../../services/RiderDeliveryService";
 
 export interface CollectionDelivery {
     delivery_id: number;
@@ -17,14 +19,16 @@ export interface CollectionDelivery {
     collected_amount: number | null;
     payment_method: string;
     payment_status: "unpaid" | "paid";
+    is_recurring: boolean;
     status: "in_transit" | "delivered";
 }
 
 const RiderCollectionMainPage = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [selectedDelivery, setSelectedDelivery] = useState<CollectionDelivery | null>(null);
     const [isCollectionFormOpen, setIsCollectionFormOpen] = useState(false);
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-    const [collectedAmount, setCollectedAmount] = useState<number>(0);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     useEffect(() => {
         document.title = "Collection Form";
@@ -32,52 +36,54 @@ const RiderCollectionMainPage = () => {
 
     const handleOpenCollection = (delivery: CollectionDelivery) => {
         setSelectedDelivery(delivery);
-        setCollectedAmount(delivery.expected_amount);
+        setSubmitError(null);
         setIsCollectionFormOpen(true);
     };
 
-    const handleProceedConfirm = (amount: number) => {
-        setCollectedAmount(amount);
-        setIsCollectionFormOpen(false);
-        setIsConfirmOpen(true);
-    };
-
-    const handleConfirmed = () => {
-        setIsConfirmOpen(false);
-        setSelectedDelivery(null);
-        setCollectedAmount(0);
+    const handleSubmitCollection = async (amount: number) => {
+        if (!selectedDelivery) return;
+        setSubmitError(null);
+        try {
+            await RiderDeliveryService.markDelivered(
+                selectedDelivery.delivery_id,
+                amount
+            );
+            setSelectedDelivery(null);
+            setRefreshKey((k) => k + 1);
+        } catch {
+            setSubmitError("Failed to submit collection. Please try again.");
+            throw new Error("submit failed");
+        }
     };
 
     return (
         <>
-            {/* Page Header */}
-            <div className="mb-6">
-                <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">
-                    Rider
-                </p>
-                <h1 className="text-2xl font-bold text-gray-800">
-                    Payment Collection
-                </h1>
-                <p className="text-sm text-gray-400 mt-1">
-                    Submit the cash collected per delivery stop.
-                </p>
-            </div>
+            <PageHeader
+                portal="rider"
+                title="Payment Collection"
+                description="Unpaid deliveries and weekly recurring orders. Prepaid orders do not appear here."
+            />
 
-            <CollectionList onCollect={handleOpenCollection} />
+            {submitError && (
+                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                    {submitError}
+                </div>
+            )}
+
+            <CollectionList
+                onCollect={handleOpenCollection}
+                refreshKey={refreshKey}
+                highlightDeliveryId={
+                    searchParams.get("delivery") ? Number(searchParams.get("delivery")) : undefined
+                }
+                onHighlightHandled={() => setSearchParams({})}
+            />
 
             <CollectionFormModal
                 isOpen={isCollectionFormOpen}
                 delivery={selectedDelivery}
                 onClose={() => setIsCollectionFormOpen(false)}
-                onProceed={handleProceedConfirm}
-            />
-
-            <ConfirmCollectionModal
-                isOpen={isConfirmOpen}
-                delivery={selectedDelivery}
-                collectedAmount={collectedAmount}
-                onClose={() => setIsConfirmOpen(false)}
-                onConfirm={handleConfirmed}
+                onSubmit={handleSubmitCollection}
             />
         </>
     );

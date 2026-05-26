@@ -17,6 +17,11 @@ class User extends Authenticatable
     protected $table      = 'tbl_users';
     protected $primaryKey = 'user_id';
 
+    public function getAuthIdentifierName(): string
+    {
+        return 'user_id';
+    }
+
     protected $fillable = [
         'profile_picture',
         'first_name',
@@ -43,7 +48,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password' => 'hashed',
+            'password'   => 'hashed',
+            'is_active'  => 'boolean',
+            'is_deleted' => 'boolean',
         ];
     }
 }

@@ -1,9 +1,15 @@
 import { useEffect } from "react";
-import { Bell, AlertTriangle, Truck, CreditCard, GlassWater, WifiOff } from "lucide-react";
-import { useNotification, type NotificationType } from "../../contexts/NotificationContext";
+import { Bell, AlertTriangle, Truck, CreditCard, GlassWater, WifiOff, PackageX } from "lucide-react";
+import { useNotification } from "../../contexts/NotificationContext";
+const defaultConfig = {
+    label: "Alert",
+    icon: Bell,
+    color: "text-gray-600",
+    bg: "bg-gray-50",
+};
 
 const notificationConfig: Record<
-    NotificationType,
+    string,
     { label: string; icon: React.ElementType; color: string; bg: string }
 > = {
     low_stock: {
@@ -36,6 +42,18 @@ const notificationConfig: Record<
         color: "text-orange-600",
         bg: "bg-orange-50",
     },
+    lost_item: {
+        label: "Lost Item",
+        icon: PackageX,
+        color: "text-purple-600",
+        bg: "bg-purple-50",
+    },
+    general: {
+        label: "General",
+        icon: Bell,
+        color: "text-gray-600",
+        bg: "bg-gray-50",
+    },
 };
 
 interface NotificationsPageProps {
@@ -43,7 +61,7 @@ interface NotificationsPageProps {
 }
 
 const NotificationsPage = ({ title = "Notifications" }: NotificationsPageProps) => {
-    const { notifications, unreadCount, markRead, markAllRead } = useNotification();
+    const { notifications, unreadCount, loading, markRead, markAllRead } = useNotification();
 
     useEffect(() => {
         document.title = title;
@@ -78,13 +96,17 @@ const NotificationsPage = ({ title = "Notifications" }: NotificationsPageProps) 
 
             {/* Notification List */}
             <div className="space-y-2">
-                {notifications.length === 0 ? (
+                {loading && notifications.length === 0 ? (
+                    <div className="bg-white rounded-lg border border-gray-200 px-6 py-10 text-center text-sm text-gray-400">
+                        Loading notifications…
+                    </div>
+                ) : notifications.length === 0 ? (
                     <div className="bg-white rounded-lg border border-gray-200 px-6 py-10 text-center text-sm text-gray-400">
                         No notifications found.
                     </div>
                 ) : (
                     notifications.map((notif) => {
-                        const config = notificationConfig[notif.type];
+                        const config = notificationConfig[notif.type] ?? defaultConfig;
                         const Icon = config.icon;
 
                         return (
@@ -111,6 +133,9 @@ const NotificationsPage = ({ title = "Notifications" }: NotificationsPageProps) 
                                             <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
                                         )}
                                     </div>
+                                    {notif.title && (
+                                        <p className="text-sm font-semibold text-gray-800">{notif.title}</p>
+                                    )}
                                     <p className="text-sm text-gray-700">{notif.message}</p>
                                     <p className="text-xs text-gray-400 mt-1">{notif.created_at}</p>
                                 </div>

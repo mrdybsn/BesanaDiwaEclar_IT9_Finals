@@ -4,6 +4,7 @@ import GallonDebtList from "./components/GallonDebtList";
 import ResolveGallonDebtModal from "./components/ResolveGallonDebtModal";
 import ViewGallonDebtModal from "./components/ViewGallonDebtModal";
 import NotifyJugDebtModal from "./components/NotifyJudDebtModal";
+import PageHeader from "../../components/Layout/PageHeader";
 
 const GallonDebtsMainPage = () => {
     const resolveModal = useModal(false);
@@ -16,6 +17,11 @@ const GallonDebtsMainPage = () => {
 
     return (
         <>
+            <PageHeader
+                title="Gallon Debts"
+                description="Track gallon containers borrowed by customers from orders and recurring deliveries."
+            />
+
             <GallonDebtList
                 onResolve={resolveModal.openModal}
                 onView={viewModal.openModal}

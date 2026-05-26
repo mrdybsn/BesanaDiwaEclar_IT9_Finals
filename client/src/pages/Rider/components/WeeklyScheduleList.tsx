@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Calendar, ChevronDown, ChevronUp, Package, User } from "lucide-react";
 import type { RecurringDelivery } from "../RiderWeeklyScheduleMainPage";
+import RiderDeliveryService from "../../../services/RiderDeliveryService";
 
 const DAYS_ORDER = [
     "monday",
@@ -23,115 +23,15 @@ const DAY_LABELS: Record<string, string> = {
     sunday: "Sunday",
 };
 
-const DAY_COLORS: Record<string, { bg: string; text: string; badge: string }> =
-    {
-        monday: {
-            bg: "bg-blue-50 border-blue-200",
-            text: "text-blue-700",
-            badge: "bg-blue-100 text-blue-700",
-        },
-        tuesday: {
-            bg: "bg-violet-50 border-violet-200",
-            text: "text-violet-700",
-            badge: "bg-violet-100 text-violet-700",
-        },
-        wednesday: {
-            bg: "bg-emerald-50 border-emerald-200",
-            text: "text-emerald-700",
-            badge: "bg-emerald-100 text-emerald-700",
-        },
-        thursday: {
-            bg: "bg-amber-50 border-amber-200",
-            text: "text-amber-700",
-            badge: "bg-amber-100 text-amber-700",
-        },
-        friday: {
-            bg: "bg-rose-50 border-rose-200",
-            text: "text-rose-700",
-            badge: "bg-rose-100 text-rose-700",
-        },
-        saturday: {
-            bg: "bg-orange-50 border-orange-200",
-            text: "text-orange-700",
-            badge: "bg-orange-100 text-orange-700",
-        },
-        sunday: {
-            bg: "bg-gray-50 border-gray-200",
-            text: "text-gray-600",
-            badge: "bg-gray-100 text-gray-600",
-        },
-    };
-
-// Mock data — replace with real API call
-const MOCK_SCHEDULE: RecurringDelivery[] = [
-    {
-        recurring_id: 1,
-        customer_name: "Maria Santos",
-        contact_number: "09171234567",
-        delivery_address: "Brgy. Baybay, Roxas City",
-        product_name: "Purified Water",
-        product_size: "5gal",
-        quantity: 2,
-        day_of_week: "monday",
-        is_active: true,
-        estimated_amount: 120,
-        gallon_exchange: true,
-        notes: "Leave at gate if no one answers",
-    },
-    {
-        recurring_id: 2,
-        customer_name: "Juan Dela Cruz",
-        contact_number: "09181234567",
-        delivery_address: "Arnaldo Blvd., Roxas City",
-        product_name: "Purified Water",
-        product_size: "5gal",
-        quantity: 1,
-        day_of_week: "monday",
-        is_active: true,
-        estimated_amount: 60,
-        gallon_exchange: false,
-    },
-    {
-        recurring_id: 3,
-        customer_name: "Ana Reyes",
-        contact_number: "09191234567",
-        delivery_address: "Brgy. Poblacion, Roxas City",
-        product_name: "Purified Water",
-        product_size: "5gal",
-        quantity: 3,
-        day_of_week: "wednesday",
-        is_active: true,
-        estimated_amount: 180,
-        gallon_exchange: true,
-    },
-    {
-        recurring_id: 4,
-        customer_name: "Pedro Mercado",
-        contact_number: "09201234567",
-        delivery_address: "Brgy. Culasi, Roxas City",
-        product_name: "Purified Water",
-        product_size: "5gal",
-        quantity: 2,
-        day_of_week: "friday",
-        is_active: false,
-        estimated_amount: 120,
-        gallon_exchange: false,
-        notes: "Call before delivery",
-    },
-    {
-        recurring_id: 5,
-        customer_name: "Lita Bautista",
-        contact_number: "09211234567",
-        delivery_address: "Brgy. Dumolog, Roxas City",
-        product_name: "Purified Water",
-        product_size: "5gal",
-        quantity: 4,
-        day_of_week: "friday",
-        is_active: true,
-        estimated_amount: 240,
-        gallon_exchange: true,
-    },
-];
+const DAY_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
+    monday: { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", badge: "bg-blue-100 text-blue-700" },
+    tuesday: { bg: "bg-violet-50 border-violet-200", text: "text-violet-700", badge: "bg-violet-100 text-violet-700" },
+    wednesday: { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
+    thursday: { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", badge: "bg-amber-100 text-amber-700" },
+    friday: { bg: "bg-rose-50 border-rose-200", text: "text-rose-700", badge: "bg-rose-100 text-rose-700" },
+    saturday: { bg: "bg-orange-50 border-orange-200", text: "text-orange-700", badge: "bg-orange-100 text-orange-700" },
+    sunday: { bg: "bg-gray-50 border-gray-200", text: "text-gray-600", badge: "bg-gray-100 text-gray-600" },
+};
 
 interface Props {
     onView: (schedule: RecurringDelivery) => void;
@@ -143,22 +43,18 @@ const WeeklyScheduleList = ({ onView }: Props) => {
     const [error, setError] = useState<string | null>(null);
     const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
 
-    const todayName = new Date()
-        .toLocaleDateString("en-US", { weekday: "long" })
-        .toLowerCase();
+    const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
 
     useEffect(() => {
         const fetchSchedule = async () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await axios.get("/api/rider/weekly-schedule");
-                // Laravel may wrap in { data: [...] } or return array directly
-                const payload = res.data?.data ?? res.data;
-                setSchedules(Array.isArray(payload) ? payload : MOCK_SCHEDULE);
+                const data = await RiderDeliveryService.loadWeeklySchedule();
+                setSchedules(data);
             } catch {
-                // Network error or no backend yet — use mock data
-                setSchedules(MOCK_SCHEDULE);
+                setError("Could not load weekly schedule.");
+                setSchedules([]);
             } finally {
                 setLoading(false);
             }
@@ -188,10 +84,7 @@ const WeeklyScheduleList = ({ onView }: Props) => {
         return (
             <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                    <div
-                        key={i}
-                        className="h-24 bg-gray-100 rounded-xl animate-pulse"
-                    />
+                    <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />
                 ))}
             </div>
         );
@@ -208,7 +101,6 @@ const WeeklyScheduleList = ({ onView }: Props) => {
 
     return (
         <div className="space-y-4">
-            {/* Summary row */}
             <div className="flex items-center gap-3 pb-2">
                 <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
                     <Calendar className="w-4 h-4 text-gray-500" />
@@ -224,7 +116,6 @@ const WeeklyScheduleList = ({ onView }: Props) => {
                 </div>
             </div>
 
-            {/* Day sections */}
             {DAYS_ORDER.map((day) => {
                 const items = grouped[day];
                 if (items.length === 0) return null;
@@ -239,15 +130,13 @@ const WeeklyScheduleList = ({ onView }: Props) => {
                         key={day}
                         className={`border rounded-xl overflow-hidden ${isToday ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
                     >
-                        {/* Day header */}
                         <button
+                            type="button"
                             onClick={() => toggleDay(day)}
                             className={`w-full flex items-center justify-between px-4 py-3 border-b ${color.bg} transition-colors`}
                         >
                             <div className="flex items-center gap-3">
-                                <span
-                                    className={`text-sm font-bold uppercase tracking-wide ${color.text}`}
-                                >
+                                <span className={`text-sm font-bold uppercase tracking-wide ${color.text}`}>
                                     {DAY_LABELS[day]}
                                 </span>
                                 {isToday && (
@@ -255,45 +144,36 @@ const WeeklyScheduleList = ({ onView }: Props) => {
                                         Today
                                     </span>
                                 )}
-                                <span
-                                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color.badge}`}
-                                >
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color.badge}`}>
                                     {activeCount}/{items.length} active
                                 </span>
                             </div>
                             {isCollapsed ? (
-                                <ChevronDown
-                                    className={`w-4 h-4 ${color.text}`}
-                                />
+                                <ChevronDown className={`w-4 h-4 ${color.text}`} />
                             ) : (
-                                <ChevronUp
-                                    className={`w-4 h-4 ${color.text}`}
-                                />
+                                <ChevronUp className={`w-4 h-4 ${color.text}`} />
                             )}
                         </button>
 
-                        {/* Delivery cards */}
                         {!isCollapsed && (
                             <div className="divide-y divide-gray-100 bg-white">
                                 {items.map((schedule) => (
                                     <button
+                                        type="button"
                                         key={schedule.recurring_id}
                                         onClick={() => onView(schedule)}
                                         className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors ${!schedule.is_active ? "opacity-50" : ""}`}
                                     >
-                                        {/* Status dot */}
                                         <span
                                             className={`mt-1.5 shrink-0 w-2 h-2 rounded-full ${schedule.is_active ? "bg-emerald-500" : "bg-gray-300"}`}
                                         />
-
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between gap-2">
                                                 <span className="text-sm font-semibold text-gray-800 truncate">
                                                     {schedule.customer_name}
                                                 </span>
                                                 <span className="text-xs font-bold text-gray-700 shrink-0">
-                                                    ₱
-                                                    {schedule.estimated_amount.toLocaleString()}
+                                                    ₱{schedule.estimated_amount.toLocaleString()}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-gray-400 truncate mt-0.5">
@@ -302,8 +182,7 @@ const WeeklyScheduleList = ({ onView }: Props) => {
                                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                                 <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                                                     <Package className="w-3 h-3" />
-                                                    {schedule.quantity}x{" "}
-                                                    {schedule.product_size}
+                                                    {schedule.quantity}x {schedule.product_size}
                                                 </span>
                                                 {schedule.gallon_exchange && (
                                                     <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
@@ -312,7 +191,7 @@ const WeeklyScheduleList = ({ onView }: Props) => {
                                                 )}
                                                 {!schedule.is_active && (
                                                     <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                                                        Paused
+                                                        Completed
                                                     </span>
                                                 )}
                                             </div>
@@ -328,10 +207,8 @@ const WeeklyScheduleList = ({ onView }: Props) => {
             {schedules.length === 0 && (
                 <div className="text-center py-16 text-gray-400">
                     <User className="mx-auto mb-3 w-10 h-10 opacity-40" />
-                    <p className="text-sm font-medium">No recurring orders</p>
-                    <p className="text-xs mt-1">
-                        Your weekly schedule will appear here
-                    </p>
+                    <p className="text-sm font-medium">No deliveries this week</p>
+                    <p className="text-xs mt-1">Your weekly schedule will appear here</p>
                 </div>
             )}
         </div>

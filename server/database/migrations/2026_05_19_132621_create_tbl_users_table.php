@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('middle_name', 55)->nullable();
             $table->string('last_name', 55);
             $table->string('suffix_name', 20)->nullable();
-            $table->enum('role', ['admin', 'staff', 'rider', 'customer']);
+            $table->enum('role', ['admin','rider']);
             $table->date('birth_date');
             $table->integer('age');
             $table->string('contact_number', 20)->nullable();

@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/Table";
+import LazyTableViewport from "../../../components/Table/LazyTableViewport";
+import { useLazyPaginatedList } from "../../../hooks/useLazyPaginatedList";
 import type { UserColumns } from "../../../interfaces/UserInterfaces";
 import UserService from "../../../services/UserService";
 
@@ -20,39 +22,34 @@ const UserList = ({
     onStatusToggled,
     refreshKey,
 }: UserListProps) => {
-    const [users, setUsers] = useState<UserColumns[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [lastPage, setLastPage] = useState(1);
 
-    // Debounce: wait 400ms after user stops typing before searching
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(searchInput);
-            setCurrentPage(1);
-        }, 400);
+        const timer = setTimeout(() => setDebouncedSearch(searchInput), 400);
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    const fetchUsers = async (page: number, searchTerm: string) => {
-        setIsLoading(true);
-        try {
-            const response = await UserService.loadUsers(page, searchTerm);
-            setUsers(response.data.users.data);
-            setCurrentPage(response.data.users.current_page);
-            setLastPage(response.data.users.last_page);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const fetchPage = useCallback(async (page: number) => {
+        const response = await UserService.loadUsers(page, debouncedSearch);
+        const u = response.data.users;
+        return { data: u.data, current_page: u.current_page, last_page: u.last_page };
+    }, [debouncedSearch]);
 
-    useEffect(() => {
-        fetchUsers(currentPage, debouncedSearch);
-    }, [currentPage, debouncedSearch, refreshKey]);
+    const {
+        items: users,
+        scrollRef,
+        sentinelRef,
+        viewportRef,
+        initialLoading,
+        loadingMore,
+        reload,
+    } = useLazyPaginatedList<UserColumns>({
+        fetchPage,
+        resetKey: `${debouncedSearch}-${refreshKey}`,
+    });
+
+    const isLoading = initialLoading || loadingMore;
 
     const handleStatusToggle = async (user: UserColumns) => {
         try {
@@ -61,7 +58,7 @@ const UserList = ({
             onStatusToggled(
                 `${user.first_name} ${user.last_name} is now ${newStatus ? "Active" : "Inactive"}.`
             );
-            fetchUsers(currentPage, debouncedSearch);
+            reload();
         } catch (error) {
             onStatusToggled("Failed to update user status.", true);
         }
@@ -74,7 +71,7 @@ const UserList = ({
                 <div className="relative">
                     <input
                         type="text"
-                        placeholder="Search users..."
+                        placeholder="Search riders..."
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
@@ -96,11 +93,19 @@ const UserList = ({
                     onClick={onAddUser}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium cursor-pointer rounded-lg shadow"
                 >
-                    + Add User
+                    + Add Rider
                 </button>
             </div>
 
-            <div className="max-w-full overflow-x-auto">
+            <LazyTableViewport
+                viewportRef={viewportRef}
+                scrollRef={scrollRef}
+                sentinelRef={sentinelRef}
+                initialLoading={initialLoading}
+                loadingMore={loadingMore}
+                isEmpty={!initialLoading && users.length === 0}
+                emptyMessage="No riders found."
+            >
                 <Table>
                     <TableHeader className="border-b border-gray-200 bg-blue-600 sticky text-white top-0 text-xs">
                         <TableRow>
@@ -108,7 +113,6 @@ const UserList = ({
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">Profile</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-start">Full Name</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-start">Username</TableCell>
-                            <TableCell isHeader className="px-5 py-3 font-medium text-start">Role</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-start">Contact No.</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-start">Birth Date</TableCell>
                             <TableCell isHeader className="px-5 py-3 font-medium text-center">Age</TableCell>
@@ -117,26 +121,7 @@ const UserList = ({
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 text-gray-500 text-sm">
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell className="py-10 text-center" colSpan={10}>
-                                    <div className="flex justify-center items-center gap-2 text-blue-600">
-                                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                        </svg>
-                                        <span>Loading users...</span>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : users.length === 0 ? (
-                            <TableRow>
-                                <TableCell className="py-10 text-center text-gray-400" colSpan={10}>
-                                    No users found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            users.map((user, index) => {
+                        {users.map((user, index) => {
                                 const fullName = [
                                     user.last_name,
                                     user.first_name,
@@ -151,7 +136,7 @@ const UserList = ({
                                 return (
                                     <TableRow className="hover:bg-gray-50" key={user.user_id}>
                                         <TableCell className="px-4 py-3 text-center">
-                                            {(currentPage - 1) * 15 + index + 1}
+                                            {index + 1}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-center">
                                             <img
@@ -162,7 +147,6 @@ const UserList = ({
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-start">{fullName}</TableCell>
                                         <TableCell className="px-4 py-3 text-start">{user.username}</TableCell>
-                                        <TableCell className="px-4 py-3 text-start capitalize">{user.role}</TableCell>
                                         <TableCell className="px-4 py-3 text-start">{user.contact_number ?? "—"}</TableCell>
                                         <TableCell className="px-4 py-3 text-start">{user.birth_date}</TableCell>
                                         <TableCell className="px-4 py-3 text-center">{user.age}</TableCell>
@@ -199,36 +183,10 @@ const UserList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
-                        )}
+                            })}
                     </TableBody>
                 </Table>
-            </div>
-
-            {/* Pagination */}
-            {!isLoading && lastPage > 1 && (
-                <div className="flex justify-center items-center gap-2 py-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
-                        className="px-3 py-1 text-sm rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100"
-                    >
-                        Prev
-                    </button>
-                    <span className="text-sm text-gray-600">
-                        Page {currentPage} of {lastPage}
-                    </span>
-                    <button
-                        type="button"
-                        disabled={currentPage === lastPage}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                        className="px-3 py-1 text-sm rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-100"
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
+            </LazyTableViewport>
         </div>
     );
 };
