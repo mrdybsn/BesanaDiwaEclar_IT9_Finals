@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\RecurringOrder;
 use App\Services\GeocodingService;
+use App\Services\RecurringOrderService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -106,14 +107,29 @@ class DeliveryController extends Controller
                 $expectedAmount    = $validated['expected_amount'] ?? null;
 
                 if ($recurringOrderId) {
-                    $recurring = RecurringOrder::with(['product', 'customer'])
+                    $recurring = RecurringOrder::with(['product', 'initialProduct', 'customer'])
                         ->where('recurring_order_id', $recurringOrderId)
                         ->where('is_deleted', false)
                         ->where('is_active', true)
                         ->firstOrFail();
 
-                    $product  = $recurring->product;
-                    $subtotal = ($product->price ?? 0) * $recurring->quantity;
+                    $chargeProduct = $recurring->product;
+                    $unitPrice     = RecurringOrderService::deliveryUnitPrice(
+                        $recurring->product,
+                        $recurring->initialProduct,
+                        (bool) $recurring->includes_container,
+                        (bool) $recurring->first_delivery_completed
+                    );
+
+                    if (
+                        $recurring->includes_container
+                        && !$recurring->first_delivery_completed
+                        && $recurring->initialProduct
+                    ) {
+                        $chargeProduct = $recurring->initialProduct;
+                    }
+
+                    $subtotal       = $unitPrice * $recurring->quantity;
                     $expectedAmount = $expectedAmount ?? $subtotal;
 
                     $gpsLat = null;
@@ -126,11 +142,18 @@ class DeliveryController extends Controller
                         }
                     }
 
+                    $gallonOwned = 0;
+                    if ($recurring->includes_container && !$recurring->first_delivery_completed) {
+                        $gallonOwned = $recurring->quantity;
+                    }
+
                     $order = Order::create([
                         'customer_id'      => $recurring->customer_id,
                         'processed_by'     => auth()->id(),
                         'order_type'       => 'delivery',
                         'total_amount'     => $subtotal,
+                        'gallon_owned'     => $gallonOwned,
+                        'gallon_exchange'  => 0,
                         'status'           => 'pending',
                         'payment_method'   => 'cash',
                         'payment_status'   => 'unpaid',
@@ -142,11 +165,15 @@ class DeliveryController extends Controller
 
                     OrderItem::create([
                         'order_id'   => $order->order_id,
-                        'product_id' => $recurring->product_id,
+                        'product_id' => $chargeProduct->product_id,
                         'quantity'   => $recurring->quantity,
-                        'unit_price' => $product->price ?? 0,
+                        'unit_price' => $unitPrice,
                         'subtotal'   => $subtotal,
                     ]);
+
+                    if ($recurring->includes_container && !$recurring->first_delivery_completed) {
+                        $recurring->update(['first_delivery_completed' => true]);
+                    }
 
                     $orderId = $order->order_id;
                 } else {

@@ -28,7 +28,12 @@ const RiderDeliveryActions = ({
         }
         setCompleting(true);
         try {
-            await RiderDeliveryService.markCompletePrepaid(delivery.delivery_id);
+            const result = await RiderDeliveryService.markCompletePrepaid(delivery.delivery_id);
+            if (result.gallon_debt?.gallons_owed != null) {
+                window.alert(
+                    `${result.gallon_debt.customer_name ?? "Customer"} now has ${result.gallon_debt.gallons_owed} gallon jug(s) on record in Gallon Debts.`
+                );
+            }
             onUpdated?.();
         } catch {
             window.alert("Could not complete delivery. Please try again.");

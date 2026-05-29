@@ -9,7 +9,6 @@ use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Services\GallonDebtService;
 use App\Services\OrderStockService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -247,18 +246,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Track gallon container debt
-            $gallonOwned    = (int) ($validated['gallon_owned']    ?? 0);
-            $gallonExchange = (int) ($validated['gallon_exchange'] ?? 0);
-            $netBorrowed    = GallonDebtService::netBorrowedFromOrder($gallonOwned, $gallonExchange);
-
-            if ($customerId && $netBorrowed > 0) {
-                GallonDebtService::recordDebt(
-                    $customerId,
-                    $netBorrowed,
-                    "Auto-logged from order #{$order->order_id}"
-                );
-            }
+            // Gallon debt is recorded when the rider marks the delivery as delivered.
 
             if (
                 $validated['order_type'] === 'walkin'

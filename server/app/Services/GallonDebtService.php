@@ -48,4 +48,24 @@ class GallonDebtService
         $net = $gallonOwned - $gallonExchange;
         return max(0, $net);
     }
+
+    /**
+     * Outstanding gallon count for a customer (borrowed minus returned).
+     */
+    public static function gallonsOwedForCustomer(?int $customerId): int
+    {
+        if (!$customerId) {
+            return 0;
+        }
+
+        $debt = GallonDebt::where('customer_id', $customerId)
+            ->where('is_deleted', false)
+            ->first();
+
+        if (!$debt) {
+            return 0;
+        }
+
+        return max(0, $debt->gallons_borrowed - $debt->gallons_returned);
+    }
 }

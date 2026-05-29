@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\RecurringOrder;
+use App\Services\RecurringOrderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -70,6 +72,17 @@ class RecurringOrderController extends Controller
             $validated['day_of_week'] = strtolower($validated['day_of_week']);
         }
 
+        $orderedProduct = Product::findOrFail($validated['product_id']);
+        if (RecurringOrderService::isNewContainerProduct($orderedProduct)) {
+            $refill = RecurringOrderService::resolveRefillProduct($orderedProduct);
+            $validated['initial_product_id']  = $orderedProduct->product_id;
+            $validated['product_id']          = $refill->product_id;
+            $validated['includes_container']  = true;
+        } else {
+            $validated['includes_container'] = false;
+        }
+        $validated['first_delivery_completed'] = false;
+
         $recurring = RecurringOrder::create($validated);
         $recurring->load(['customer', 'product']);
 
@@ -85,7 +98,7 @@ class RecurringOrderController extends Controller
     public function updateRecurring(Request $request, RecurringOrder $recurringOrder): JsonResponse
     {
         $validated = $request->validate([
-            'customer_id'      => 'sometimes|exists:tbl_users,user_id',
+            'customer_id'      => 'sometimes|exists:tbl_customers,customer_id',
             'product_id'       => 'sometimes|exists:tbl_products,product_id',
             'quantity'         => 'sometimes|integer|min:1',
             'day_of_week'      => 'sometimes|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',

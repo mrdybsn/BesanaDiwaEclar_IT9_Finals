@@ -203,7 +203,14 @@ const RiderDeliveryService = {
     },
 
     markDelivered: async (deliveryId: number, collectedAmount: number, notes?: string) => {
-        const response = await AxiosInstance.patch(`/rider/deliveries/${deliveryId}/delivered`, {
+        const response = await AxiosInstance.patch<{
+            message: string;
+            gallon_debt?: {
+                gallons_owed: number;
+                customer_id: number;
+                customer_name: string | null;
+            } | null;
+        }>(`/rider/deliveries/${deliveryId}/delivered`, {
             collected_amount: collectedAmount,
             notes,
         });
@@ -212,7 +219,14 @@ const RiderDeliveryService = {
 
     /** Prepaid one-time delivery — no cash collection at the door. */
     markCompletePrepaid: async (deliveryId: number, notes?: string) => {
-        const response = await AxiosInstance.patch(`/rider/deliveries/${deliveryId}/delivered`, {
+        const response = await AxiosInstance.patch<{
+            message: string;
+            gallon_debt?: {
+                gallons_owed: number;
+                customer_id: number;
+                customer_name: string | null;
+            } | null;
+        }>(`/rider/deliveries/${deliveryId}/delivered`, {
             collected_amount: 0,
             complete_only: true,
             notes,

@@ -25,7 +25,9 @@ const AdminOrdersMainPage = () => {
     const [categoryTab, setCategoryTab] = useState<CategoryTab>(
         ["walkin", "delivery", "recurring"].includes(initialCategory) ? initialCategory : "walkin"
     );
-    const [statusTab, setStatusTab] = useState<StatusTab>("active");
+    const [statusTab, setStatusTab] = useState<StatusTab>(
+        initialCategory === "walkin" ? "history" : "active"
+    );
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
     const [receiptMode, setReceiptMode] = useState(false);
 
@@ -53,7 +55,7 @@ const AdminOrdersMainPage = () => {
 
     const switchCategory = (tab: CategoryTab) => {
         setCategoryTab(tab);
-        setStatusTab("active");
+        setStatusTab(tab === "walkin" ? "history" : "active");
         setSearchParams(tab === "walkin" ? {} : { tab });
     };
 
@@ -100,6 +102,17 @@ const AdminOrdersMainPage = () => {
                 <RecurringOrderList
                     onView={(order) => viewRecurringModal.openModal(order)}
                 />
+            ) : categoryTab === "walkin" ? (
+                <>
+                    <p className="text-sm text-gray-500 bg-cyan-50 border border-cyan-100 rounded-lg px-4 py-2.5">
+                        Walk-in orders are completed at the counter right away. Past sales appear below.
+                    </p>
+                    <OrderHistoryTab
+                        category="walkin"
+                        onView={handleView}
+                        onViewReceipt={handleViewReceipt}
+                    />
+                </>
             ) : (
                 <>
                     <div className="flex gap-2">

@@ -78,6 +78,12 @@ const PaymentModal = ({
     const amountTendered = parseFloat(amountInput) || 0;
     const change         = amountTendered - totalAmount;
 
+    const hasNewContainerInCart = orderItems.some(
+        (item) =>
+            item.container_deposit > 0 ||
+            item.name.toLowerCase().includes("(new container)")
+    );
+
     const numpadKeys = ["1","2","3","4","5","6","7","8","9",".","0","⌫"];
 
     // Reset on open
@@ -162,6 +168,18 @@ const PaymentModal = ({
             const methodForOrder: "cash" | "gcash" | "maya" | "other" =
                 isCodOrder ? "cash" : (paymentMethod as "cash" | "gcash" | "maya" | "other");
 
+            const newContainerQty = orderItems
+                .filter(
+                    (item) =>
+                        item.container_deposit > 0 ||
+                        item.name.toLowerCase().includes("(new container)")
+                )
+                .reduce((sum, item) => sum + item.quantity, 0);
+            const effectiveGallonOwned =
+                orderType === "recurring" && newContainerQty > 0
+                    ? Math.max(gallonOwned, newContainerQty)
+                    : gallonOwned;
+
             const orderRes = await OrderService.storeOrder({
                 order_type:       orderType === "recurring" ? "delivery" : orderType,
                 payment_method:   methodForOrder,
@@ -174,7 +192,7 @@ const PaymentModal = ({
                     : orderType === "recurring"
                     ? getNextOccurrence(dayOfWeek)
                     : undefined,
-                gallon_owned:     gallonOwned,
+                gallon_owned:     effectiveGallonOwned,
                 gallon_exchange:  gallonExchange,
                 customer_name:    customer.name    || undefined,
                 customer_contact: customer.contact || undefined,
@@ -216,7 +234,17 @@ const PaymentModal = ({
 
         } catch (err: any) {
             console.error("Failed to save order:", err);
-            setError(err.response?.data?.message ?? "Failed to save order. Please try again.");
+            const apiError =
+                err.response?.data?.error ??
+                err.response?.data?.message ??
+                err.response?.data?.errors;
+            setError(
+                typeof apiError === "string"
+                    ? apiError
+                    : apiError
+                      ? JSON.stringify(apiError)
+                      : "Failed to save order. Please try again."
+            );
         } finally {
             setLoading(false);
         }
@@ -541,9 +569,16 @@ const PaymentModal = ({
                                         )}
 
                                         {orderType === "recurring" && (
-                                            <p className="text-xs text-purple-700 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
-                                                Recurring orders are paid weekly on delivery (cash on delivery).
-                                            </p>
+                                            <div className="text-xs text-purple-700 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2 space-y-1">
+                                                <p>
+                                                    Recurring orders are paid weekly on delivery (cash on delivery).
+                                                </p>
+                                                {hasNewContainerInCart && (
+                                                    <p className="font-medium">
+                                                        First delivery: container + water. Weekly after: water only.
+                                                    </p>
+                                                )}
+                                            </div>
                                         )}
 
                                         {/* Day picker for recurring */}

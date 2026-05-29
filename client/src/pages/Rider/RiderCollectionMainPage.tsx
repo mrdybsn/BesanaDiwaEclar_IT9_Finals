@@ -29,6 +29,7 @@ const RiderCollectionMainPage = () => {
     const [isCollectionFormOpen, setIsCollectionFormOpen] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [gallonDebtNotice, setGallonDebtNotice] = useState<string | null>(null);
 
     useEffect(() => {
         document.title = "Collection Form";
@@ -43,11 +44,18 @@ const RiderCollectionMainPage = () => {
     const handleSubmitCollection = async (amount: number) => {
         if (!selectedDelivery) return;
         setSubmitError(null);
+        setGallonDebtNotice(null);
         try {
-            await RiderDeliveryService.markDelivered(
+            const result = await RiderDeliveryService.markDelivered(
                 selectedDelivery.delivery_id,
                 amount
             );
+            if (result.gallon_debt) {
+                const { customer_name, gallons_owed } = result.gallon_debt;
+                setGallonDebtNotice(
+                    `${customer_name ?? "Customer"} now has ${gallons_owed} gallon jug(s) on record in Gallon Debts.`
+                );
+            }
             setSelectedDelivery(null);
             setRefreshKey((k) => k + 1);
         } catch {
@@ -67,6 +75,12 @@ const RiderCollectionMainPage = () => {
             {submitError && (
                 <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
                     {submitError}
+                </div>
+            )}
+
+            {gallonDebtNotice && (
+                <div className="mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">
+                    {gallonDebtNotice}
                 </div>
             )}
 

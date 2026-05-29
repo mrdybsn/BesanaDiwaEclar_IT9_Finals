@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Notification;
 use App\Models\Remittance;
+use App\Models\RecurringOrder;
+use App\Services\GallonDebtService;
 use App\Services\OrderStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -126,6 +128,8 @@ class DeliveryTaskController extends Controller
             'notes'            => $request->notes ?? $delivery->notes,
         ]);
 
+        $gallonDebtSummary = null;
+
         if ($delivery->order) {
             $orderUpdate = ['status' => 'delivered'];
             if ($needsCollection || $collectedAmount > 0) {
@@ -133,6 +137,38 @@ class DeliveryTaskController extends Controller
             }
             $delivery->order->update($orderUpdate);
             OrderStockService::deductForOrder($delivery->order->fresh());
+
+            $order         = $delivery->order->fresh();
+            $customerId    = $order->customer_id;
+            $gallonOwned   = (int) ($order->gallon_owned ?? 0);
+            $gallonExchange = (int) ($order->gallon_exchange ?? 0);
+            $netBorrowed   = GallonDebtService::netBorrowedFromOrder($gallonOwned, $gallonExchange);
+
+            if ($customerId && $netBorrowed > 0) {
+                GallonDebtService::recordDebt(
+                    $customerId,
+                    $netBorrowed,
+                    "Logged on delivery #{$delivery->delivery_id} (order #{$order->order_id})"
+                );
+            }
+
+            if ($customerId) {
+                RecurringOrder::where('customer_id', $customerId)
+                    ->where('includes_container', true)
+                    ->where('first_delivery_completed', false)
+                    ->update(['first_delivery_completed' => true]);
+
+                $gallonsOwed = GallonDebtService::gallonsOwedForCustomer($customerId);
+                $delivery->loadMissing('order.customer');
+                $customer = $delivery->order->customer;
+                $gallonDebtSummary = [
+                    'gallons_owed'    => $gallonsOwed,
+                    'customer_id'     => $customerId,
+                    'customer_name'   => $customer
+                        ? trim("{$customer->first_name} {$customer->last_name}")
+                        : null,
+                ];
+            }
         }
 
         if ($collectedAmount > 0) {
@@ -173,8 +209,9 @@ class DeliveryTaskController extends Controller
         $delivery->load(['order.orderItems.product']);
 
         return response()->json([
-            'message'  => 'Delivery Marked as Delivered.',
-            'delivery' => $delivery
+            'message'     => 'Delivery Marked as Delivered.',
+            'delivery'    => $delivery,
+            'gallon_debt' => $gallonDebtSummary,
         ], 200);
     }
 
